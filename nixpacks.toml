@@ -1,0 +1,3 @@
+# Railway: ffmpeg is needed to turn voice answers into Telegram voice notes
+[phases.setup]
+aptPkgs = ["ffmpeg"]

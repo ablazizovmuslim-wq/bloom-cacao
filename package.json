@@ -1,0 +1,9 @@
+{
+  "name": "bloom-cacao",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bloom & Cacao — premium shokolad va gulli choy sayti",
+  "main": "server/server.js",
+  "scripts": { "start": "node server/server.js" },
+  "engines": { "node": ">=20" }
+}
