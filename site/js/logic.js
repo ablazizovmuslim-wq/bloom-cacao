@@ -28,6 +28,7 @@
       settings: {
         brand: 'Bloom & Cacao',
         agents: { sales: true, autopost: true, postHour: 9 },
+      maker: '', storage: 'Salqin va quruq joyda (16–20°C), quyosh nuridan uzoqda saqlang. Muzlatgichga qoʻymang. Eng mazali — 14 kun ichida.',
         kits: [
           { id: 'bonbon', price: 220000, cups: 2, img: 'img/kit-bonbon.jpg', name: L('Bon-bon yasash boksi', 'Бокс «Сделай бон-бон»', 'Make-your-bonbon kit'),
             items: L('Silikon qolip, shokolad tomchilari, 2 ta idishcha, retsept kartasi', 'Силиконовая форма, шоколадные капли, 2 баночки, карточка с рецептом', 'Silicone mould, chocolate drops, 2 cups, recipe card') },
@@ -367,7 +368,8 @@
       lines: q.lines, items: q.items, extras: q.extras, engrave: q.engrave, discount: q.discount, promo: q.promo,
       delivery: q.delivery, total: q.total, wallet: q.wallet, toPay: q.toPay, cashback: q.cashback,
       card: { text: str(payload.cardText, 400), design: str(payload.cardDesign, 20), voice: str(payload.voice, 3000000) },
-      gift: gift, preorder: !q.isToday, status: 'new', created: now, history: [{ s: 'new', at: now }], reviewed: false
+      gift: gift, preorder: !q.isToday, status: 'new', created: now, history: [{ s: 'new', at: now }], reviewed: false,
+      pass: code('', ctx.rnd) + code('', ctx.rnd), photos: []
     };
     if (user) {
       if (q.wallet > 0) tx(db, user, -q.wallet, 'pay', '#' + o.id, now);
@@ -644,6 +646,24 @@
       return { to: o.gift.to, from: o.gift.secret ? null : o.name, text: o.card.text, design: o.card.design, voice: o.card.voice || '',
         opened: o.gift.opened, thanks: o.gift.thanks, lines: o.lines.map(function (l) { return { type: l.type, id: l.id, name: l.name, size: l.size, qty: l.qty }; }) };
     },
+    passport: function (db, b, ctx) {
+      var o = db.orders.find(function (x) { return x.pass && x.pass === str(b.code, 16).toUpperCase(); });
+      if (!o || o.status === 'cancelled') throw err('not_found');
+      var made = (o.history || []).filter(function (h) { return h.s === 'accepted'; })[0];
+      return { id: o.id, brand: db.settings.brand, maker: db.settings.maker, storage: db.settings.storage, made: made ? made.at : o.created, date: o.date,
+        lines: o.lines.map(function (l) { var c = Object.assign({}, l); delete c.sum; delete c.price; return c; }),
+        photos: o.photos || [], engrave: o.engrave || '', rated: !!o.reviewed, first: String(o.name || '').split(' ')[0] };
+    },
+    passportRate: function (db, b, ctx) {
+      var o = db.orders.find(function (x) { return x.pass && x.pass === str(b.code, 16).toUpperCase(); });
+      if (!o || o.status === 'cancelled') throw err('not_found');
+      if (o.reviewed) throw err('already');
+      var r = { id: ++db.seq.review, user: o.user, order: o.id, name: str(b.name, 40) || String(o.name || '').split(' ')[0], stars: Math.max(1, Math.min(5, int(b.stars))),
+        text: str(b.text, 600), photo: '', status: 'pending', at: ctx.now, via: 'qr' };
+      if (!r.text) r.text = '★'.repeat(r.stars);
+      o.reviewed = true; db.reviews.push(r); ctx.events.push({ type: 'review_new', review: r });
+      return { id: r.id };
+    },
     giftThanks: function (db, b, ctx) {
       var c = str(b.code, 12).toUpperCase(), o = db.orders.find(function (x) { return x.gift && x.gift.code === c; });
       if (!o) throw err('not_found');
@@ -725,6 +745,8 @@
       if (b.bars) b.bars.forEach(function (p) { var x = t.bars.find(function (y) { return y.id === p.id; }); if (x) x.price = Math.max(0, int(p.price)); });
       if (b.toppings) b.toppings.forEach(function (p) { var x = t.toppings.find(function (y) { return y.id === p.id; }); if (x) x.price = Math.max(0, int(p.price)); });
       if (b.brand != null && str(b.brand, 40)) t.brand = str(b.brand, 40);
+      if (b.maker != null) t.maker = str(b.maker, 40);
+      if (b.storage != null) t.storage = str(b.storage, 400);
       if (b.kits) b.kits.forEach(function (p) { var x = (t.kits || []).find(function (y) { return y.id === p.id; }); if (x) { x.price = Math.max(0, int(p.price)); if (p.name) x.name = L3(p.name, 80); if (p.items) x.items = L3(p.items, 300); } });
       if (b.cupItems) b.cupItems.forEach(function (p) { var x = (t.cupItems || []).find(function (y) { return y.id === p.id; }); if (x) { x.price = Math.max(0, int(p.price)); if (p.name && p.name.uz) x.name = L3(p.name, 60); } });
       if (b.newCup && str(b.newCup.name, 60)) t.cupItems.push({ id: 'c' + ctx.now.toString(36), price: Math.max(0, int(b.newCup.price)), color: /^#[0-9a-f]{6}$/i.test(b.newCup.color) ? b.newCup.color : '#c98a3c', name: L3({ uz: b.newCup.name }, 60) });
@@ -737,6 +759,18 @@
       if (b.holidays) t.holidays = b.holidays.filter(function (h) { return h && mdOk(h.md) && str(h.id, 30); }).slice(0, 20).map(function (h) { return { id: str(h.id, 30), md: h.md, name: h.name ? L3(h.name, 40) : undefined }; });
       if (b.faq) t.faq = b.faq.slice(0, 30).map(function (f) { return { q: L3(f.q, 200), a: L3(f.a, 1000) }; }).filter(function (f) { return f.q.uz && f.a.uz; });
       return t;
+    },
+    'admin.orderPhoto': function (db, b, ctx) {
+      needAdmin(ctx);
+      var o = db.orders.find(function (x) { return x.id === int(b.id); });
+      if (!o) throw err('no_order');
+      o.photos = o.photos || [];
+      if (b.remove != null) { o.photos.splice(int(b.remove), 1); return o; }
+      var url = str(b.url, 3000000); if (!url) throw err('need_photo');
+      if (o.photos.length >= 6) throw err('too_many');
+      o.photos.push(url);
+      ctx.events.push({ type: 'order_photo', order: o, url: url, user: o.user ? findUser(db, o.user) : null });
+      return o;
     },
     'admin.status': function (db, b, ctx) { needAdmin(ctx); return setStatus(db, b.id, b.status, ctx); },
     'admin.topup': function (db, b, ctx) {
@@ -799,6 +833,7 @@
     Object.keys(sd).forEach(function (k) { if (db.settings[k] === undefined) db.settings[k] = sd[k]; });
     if (!db.settings.agents) db.settings.agents = sd.agents;
     ['shapes', 'colors', 'finishes'].forEach(function (k) { if (!db.settings.bonbon[k]) db.settings.bonbon[k] = sd.bonbon[k]; });
+    (db.orders || []).forEach(function (o) { if (!o.pass) o.pass = code('') + code(''); if (!o.photos) o.photos = []; });
   }
   function handle(db, route, body, ctx) {
     if (!db.settings.kits || !db.settings.bonbon || !db.settings.brand || !db.settings.bonbon.shapes || !db.settings.agents) migrate(db);

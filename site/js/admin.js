@@ -44,6 +44,41 @@
       (API.mode === 'demo' ? '<p class="demo">Namuna rejimi: oʻzgarishlar faqat shu brauzerda. Sayt serverga qoʻyilgach, hammasi Telegram bilan birga ishlaydi.</p>' : '') + views[tab]() + '</main>';
     scrollTo(0, y);
   }
+  /* ---- order photo: shrink -> upload -> customer gets it in Telegram ---- */
+  app.addEventListener('change', function (e) {
+    var inp = e.target.closest('[data-ophoto]'); if (!inp || !inp.files[0]) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var img = new Image();
+      img.onload = async function () {
+        var k = Math.min(1, 1400 / Math.max(img.width, img.height)), c = document.createElement('canvas');
+        c.width = img.width * k; c.height = img.height * k; c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        try {
+          var up = await API.upload(c.toDataURL('image/jpeg', .86));
+          await call('admin.orderPhoto', { id: +inp.dataset.ophoto, url: up.url });
+          toast(API.mode === 'demo' ? 'Surat qoʻshildi ✓ (serverda mijozga Telegram orqali boradi)' : 'Surat mijozga Telegram orqali yuborildi ✓');
+          await load();
+        } catch (er) {}
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(inp.files[0]);
+  });
+  /* ---- QR sticker: "chocolate passport" for the box ---- */
+  function qrSticker(o) {
+    if (!o) return;
+    var base = (API.mode === 'demo' ? location.href.replace(/admin\.html.*$/, 'index.html') : location.origin + '/'), url = base + '#pass-' + o.pass;
+    var q = qrcode(0, 'M'); q.addData(url); q.make();
+    var svg = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    var brand = esc(D.settings.brand || 'Bloom & Cacao');
+    var one = '<div class="stk"><div class="stk-b">' + brand + '</div><div class="stk-q">' + svg + '</div><div class="stk-t">Shokolad pasporti</div><div class="stk-s">Skanerlang — ichida nima borligini koʻring 🤍</div><div class="stk-n">#' + o.id + '</div></div>';
+    var w = document.createElement('div'); w.id = 'printArea';
+    w.innerHTML = '<div class="pa-bar"><b>QR stiker — buyurtma #' + o.id + '</b><span><button class="btn pri" data-pa="print">🖨 Chop etish</button> <button class="btn" data-pa="close">Yopish</button></span></div>' +
+      '<p class="muted pa-hint">Stikerni boks ustiga yopishtiring. Mijoz telefon kamerasi bilan skanerlasa, «Shokolad pasporti» ochiladi. Havola: <a href="' + esc(url) + '" target="_blank">' + esc(url) + '</a></p>' +
+      '<div class="pa-sheet">' + one + one + one + one + '</div>';
+    document.body.appendChild(w);
+    w.addEventListener('click', function (ev) { var b = ev.target.closest('[data-pa]'); if (!b) return; if (b.dataset.pa === 'print') window.print(); else w.remove(); });
+  }
   app.addEventListener('click', async function (e) {
     var b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; render(); return; }
     if (e.target.closest('[data-out]')) { API.adminLogout(); loginView(); return; }
@@ -51,6 +86,8 @@
     var act = a.dataset.act, id = a.dataset.id;
     try {
       if (act === 'status') { await call('admin.status', { id: +id, status: a.dataset.s }); }
+      else if (act === 'ophotoDel') { await call('admin.orderPhoto', { id: +id, remove: +a.dataset.i }); }
+      else if (act === 'qr') { qrSticker(D.orders.find(function (o) { return o.id === +id; })); return; }
       else if (act === 'postPreview' || act === 'postNow') {
         var pv = document.getElementById('postPv');
         if (act === 'postNow' && API.mode === 'demo') { toast('Kanalga joylash sayt serverga qoʻyilgach ishlaydi'); act = 'postPreview'; }
@@ -100,6 +137,9 @@
             (o.card && o.card.voice ? '<div>🎙 <audio controls src="' + esc(o.card.voice) + '"></audio></div>' : '') +
             (o.comment ? '<div>💬 ' + esc(o.comment) + '</div>' : '') +
             '<div class="muted">Mahsulotlar ' + som(o.items) + (o.discount ? ' · chegirma −' + som(o.discount) + ' (' + esc(o.promo) + ')' : '') + (o.extras ? ' · qoʻshimcha ' + som(o.extras) : '') + ' · yetkazish ' + som(o.delivery) + (o.wallet ? ' · hamyondan −' + som(o.wallet) : '') + '</div>' +
+            '<div class="ophotos">' + (o.photos || []).map(function (u, i) { return '<span><img src="' + esc(u) + '" alt=""><button type="button" data-act="ophotoDel" data-id="' + o.id + '" data-i="' + i + '" title="Oʻchirish">×</button></span>'; }).join('') +
+            '<label class="btn">📸 Tayyor boks surati<input type="file" accept="image/*" hidden data-ophoto="' + o.id + '"></label>' +
+            '<button class="btn" data-act="qr" data-id="' + o.id + '">🏷 QR stiker</button></div>' +
             '<div class="row"><b>Toʻlanadi: ' + som(o.toPay) + ' (' + (o.pay === 'card' ? 'karta' : 'naqd') + ')</b><div style="display:flex;gap:6px;flex-wrap:wrap">' + next.map(function (n) { return '<button class="btn' + (n[0] === 'cancelled' ? ' red' : ' pri') + '" data-act="status" data-id="' + o.id + '" data-s="' + n[0] + '">' + n[1] + '</button>'; }).join('') + '</div></div></div>';
         }).join('') || '<p class="muted">Buyurtma yoʻq</p>');
     },
@@ -168,6 +208,7 @@
       var dealOpts = '<option value="">Avtomatik (har kuni boshqa)</option>' + D.products.map(function (p) { return '<option value="' + p.id + '"' + (s.dealPin === p.id ? ' selected' : '') + '>' + esc(p.name.uz) + '</option>'; }).join('');
       return '<h2>Sozlamalar</h2><form id="setF">' +
         '<div class="card"><h3>Brend</h3><label>Doʻkon nomi (butun saytda chiqadi)<input name="brand" value="' + esc(s.brand || 'Bloom & Cacao') + '"></label></div>' +
+        '<div class="card"><h3>🏷 Shokolad pasporti (QR)</h3><p class="muted">Boksdagi QR skanerlansa chiqadigan sahifa uchun.</p><div class="g2"><label>Kim tayyorlaydi (ixtiyoriy, masalan «Dilnoza opa»)<input name="maker" maxlength="40" value="' + esc(s.maker || '') + '"></label><label>Saqlash boʻyicha maslahat<textarea name="storage" maxlength="400" rows="3">' + esc(s.storage || '') + '</textarea></label></div></div>' +
         '<div class="card"><h3>🤖 AI agentlar</h3><p class="muted">Ular faqat sayt serverga qoʻyilgach ishlaydi (bot tokeni va ANTHROPIC_API_KEY kerak). Pul bilan bogʻliq ishlar — toʻlovni tasdiqlash, qaytarish — doim sizda qoladi.</p><div class="g2">' +
         yn('ag_sales', 'Telegram sotuv agenti — mijozlar bilan 24/7 gaplashadi, buyurtma qabul qilib sizga yuboradi', (s.agents || {}).sales) +
         yn('ag_auto', 'Kanal agenti — har kuni ertalab kanalga «bugungi menyu» posti', (s.agents || {}).autopost) +
@@ -214,6 +255,7 @@
     var s = D.settings, v = function (n) { return f[n] ? f[n].value : undefined; }, b = {};
     ['cardNumber', 'cardOwner', 'phone', 'address', 'instagram', 'telegram', 'channel', 'stickers', 'cashbackPercent', 'bonusMin', 'bonusMax', 'piecePrice', 'engravePrice', 'dealPercent', 'dealPin', 'birthdayPercent', 'toyMinGuests', 'toyDiscountFrom', 'toyDiscount', 'season'].forEach(function (k) { b[k] = v(k); });
     b.brand = v('brand');
+    b.maker = v('maker'); b.storage = v('storage');
     b.agents = { sales: v('ag_sales') === '1', autopost: v('ag_auto') === '1', postHour: +v('ag_hour') || 9 };
     b.kits = (s.kits || []).map(function (k) { return { id: k.id, price: v('kp_' + k.id), name: { uz: v('kn_' + k.id), ru: k.name.ru, en: k.name.en }, items: { uz: v('ki_' + k.id), ru: k.items.ru, en: k.items.en } }; });
     b.cupItems = (s.cupItems || []).map(function (c) { return { id: c.id, price: v('cu_' + c.id) }; });

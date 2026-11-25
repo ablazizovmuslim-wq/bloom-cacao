@@ -8,6 +8,7 @@
     S.cart = M.store('mavi_cart') || [];
     applyTheme(M.store('mavi_theme') || 'emerald'); setMode(autoMode(M.store('bc_mode') || 'day'), true);
     await API.ready;
+    await tgApp();
     $('#demoTag').hidden = API.mode !== 'demo'; setTimeout(function () { $('#demoTag').classList.add('fade'); }, 5000);
     await loadCatalog();
     if (API.loggedIn()) await loadMe();
@@ -16,6 +17,21 @@
     bind();
     route();
     setInterval(tick, 1000);
+  }
+  /* ---- Telegram Mini App: the shop opened from the bot's menu button ---- */
+  async function tgApp() {
+    if (!/tgWebApp/.test(location.hash + location.search)) return;
+    document.documentElement.classList.add('tgapp');
+    await new Promise(function (ok) { var sc = document.createElement('script'); sc.src = 'https://telegram.org/js/telegram-web-app.js'; sc.onload = ok; sc.onerror = ok; document.head.appendChild(sc); setTimeout(ok, 4000); });
+    var W = window.Telegram && window.Telegram.WebApp;
+    history.replaceState(null, '', location.pathname);
+    if (!W) return;
+    M.tg = W;
+    try { W.ready(); W.expand(); W.setHeaderColor('#fbf7f0'); W.setBackgroundColor('#fbf7f0'); if (W.disableVerticalSwipes) W.disableVerticalSwipes(); } catch (e) {}
+    setMode('day', true);
+    if (API.mode === 'server' && W.initData && !API.loggedIn()) { try { await API.webappLogin(W.initData); } catch (e) { console.warn('webapp login', e); } }
+    var sp = W.initDataUnsafe && W.initDataUnsafe.start_param;
+    if (sp && /^pass-[A-Za-z0-9]+$/.test(sp)) history.replaceState(null, '', '#' + sp);
   }
   async function loadCatalog() {
     try { S.cat = await API.call('catalog', {}); M._loadedAt = performance.now(); }
@@ -254,6 +270,7 @@
     var h = location.hash.slice(1);
     if (/^gift-[A-Za-z0-9]+$/.test(h)) M.giftView && M.giftView(h.slice(5));
     else if (/^wish-[a-z0-9]+$/.test(h)) M.wishView && M.wishView(h.slice(5));
+    else if (/^pass-[A-Za-z0-9]+$/.test(h)) M.passView && M.passView(h.slice(5));
   }
 
   /* ---------------- cart & checkout ---------------- */
@@ -502,8 +519,10 @@
     var pend = me.topups.filter(function (x) { return x.status === 'pending'; });
     var orders = me.orders.map(function (o) {
       return '<div class="oc"><div class="hd"><b>#' + o.id + '</b><span>' + o.date + (o.preorder ? ' ✦' : '') + '</span><b>' + som(o.total) + '</b></div>' + track(o) +
+        ((o.photos || []).length ? '<p class="hint" style="margin:8px 0 4px">📸 ' + t('order_photos') + '</p><div class="ophs">' + o.photos.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt=""></a>'; }).join('') + '</div>' : '') +
         (o.gift && o.gift.opened ? '<p class="hint">🎁 ' + t('gift_sent') + (o.gift.thanks ? ' «' + esc(o.gift.thanks) + '»' : '') + '</p>' : '') +
         '<div class="acts"><button type="button" data-repeat="' + o.id + '">↻ ' + t('repeat') + '</button>' +
+        (o.pass && o.status !== 'cancelled' ? '<button type="button" data-pass="' + esc(o.pass) + '">🏷 ' + t('pass_btn') + '</button>' : '') +
         (o.status === 'delivered' && !o.reviewed ? '<button type="button" data-review="' + o.id + '">★ ' + t('leave_review') + '</button>' : '') +
         (o.gift ? '<button type="button" data-copy="' + esc(location.origin + location.pathname + '#gift-' + o.gift.code) + '">🔗 ' + t('gift_link') + '</button>' : '') + '</div></div>';
     }).join('') || '<p class="hint">' + t('no_orders') + '</p>';
@@ -543,6 +562,7 @@
   }
   async function accClick(e) {
     var b, me = S.me;
+    if ((b = e.target.closest('[data-pass]'))) { M.passView(b.dataset.pass); return; }
     if ((b = e.target.closest('[data-repeat]'))) {
       var o = me.orders.find(function (x) { return x.id === +b.dataset.repeat; });
       o.lines.forEach(function (l) { var c = Object.assign({}, l); delete c.price; delete c.sum; delete c.name; delete c.deal; if (c.type === 'product' && !M.prod(c.id)) return; S.cart.push(c); });

@@ -107,6 +107,7 @@
   /* cart */
   M.saveCart = function () { M.store('mavi_cart', M.state.cart); M.renderBadge && M.renderBadge(); };
   M.addLine = function (line, fromImg) {
+    try { if (M.tg && M.tg.HapticFeedback) M.tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
     var c = M.state.cart, ex = c.find(function (x) { return x.type !== 'toy' && x.type !== 'club' && M.sameLine(x, line); });
     if (line.type === 'club') c = M.state.cart = c.filter(function (x) { return x.type !== 'club'; });
     if (ex) ex.qty = (ex.qty || 1) + (line.qty || 1); else { line.qty = line.qty || 1; M.state.cart.push(line); }

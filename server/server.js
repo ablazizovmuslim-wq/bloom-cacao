@@ -55,6 +55,17 @@ function verify(tok) {
   if (s.length !== good.length || !crypto.timingSafeEqual(Buffer.from(s), Buffer.from(good))) return null;
   try { const p = JSON.parse(Buffer.from(b, 'base64url').toString()); return p.exp > Date.now() ? p : null; } catch (e) { return null; }
 }
+function checkWebApp(initData) {
+  if (!BOT || !initData) return null;
+  const p = new URLSearchParams(String(initData)), hash = p.get('hash'); if (!hash) return null;
+  p.delete('hash');
+  const str = [...p.entries()].map(([k, v]) => k + '=' + v).sort().join('\n');
+  const key = crypto.createHmac('sha256', 'WebAppData').update(BOT).digest();
+  const h = crypto.createHmac('sha256', key).update(str).digest('hex');
+  if (h.length !== hash.length || !crypto.timingSafeEqual(Buffer.from(h), Buffer.from(hash))) return null;
+  if (Date.now() / 1000 - +p.get('auth_date') > 86400) return null;
+  try { return JSON.parse(p.get('user')); } catch (e) { return null; }
+}
 function checkTelegram(d) {
   if (!BOT || !d || !d.hash) return false;
   const str = Object.keys(d).filter((k) => k !== 'hash').sort().map((k) => k + '=' + d[k]).join('\n');
@@ -127,6 +138,12 @@ function onEvents(events) {
     else if (e.type === 'order_status') toUser(e.user, 'Buyurtma <b>#' + e.order.id + '</b>: ' + ST[e.order.status] + (e.order.status === 'delivered' && e.order.cashback ? '\n✨ Hamyoningizga +' + fmt(e.order.cashback) + ' soʻm keshbek!' : ''));
     else if (e.type === 'topup_new') toAdmins('💳 Hamyon toʻldirish: <b>' + fmt(e.topup.amount) + ' soʻm</b>\n' + h(e.user.name) + ' ' + h(e.user.phone || '') + '\nPul tushganini tekshiring.', kb([[{ text: '✅ Tasdiqlash', callback_data: 'tu:' + e.topup.id + ':1' }, { text: '✖️ Rad', callback_data: 'tu:' + e.topup.id + ':0' }]]));
     else if (e.type === 'topup_done') toUser(e.user, e.topup.status === 'done' ? '💰 Hamyoningiz +' + fmt(e.topup.amount) + ' soʻmga toʻldirildi!' : 'Toʻldirish soʻrovi tasdiqlanmadi. Savollar boʻlsa, yozing.');
+    else if (e.type === 'order_photo') {
+      const to = e.user && e.user.tgId, url = String(e.url || '');
+      if (to && /^\//.test(url) && PUBLIC_URL) tg('sendPhoto', { chat_id: to, photo: PUBLIC_URL + url, parse_mode: 'HTML',
+        caption: '📸 <b>Buyurtmangiz #' + e.order.id + ' tayyor!</b>\nOpamiz uni siz uchun qadoqladi 🤍',
+        reply_markup: kb([[{ text: '🏷 Shokolad pasporti', url: PUBLIC_URL + '/#pass-' + e.order.pass }]]) });
+    }
     else if (e.type === 'review_new') toAdmins('⭐ Yangi sharh (' + e.review.stars + '/5) — ' + h(e.review.name) + '\n«' + h(e.review.text) + '»', kb([[{ text: '✅ Chiqarish', callback_data: 'rv:' + e.review.id + ':1' }, { text: '🙈 Yashirish', callback_data: 'rv:' + e.review.id + ':0' }]]));
     else if (e.type === 'lead_new') toAdmins('🏢 Korporativ soʻrov: <b>' + h(e.lead.company) + '</b>\n' + h(e.lead.name) + ' ' + h(e.lead.phone) + '\n' + (e.lead.qty || '?') + ' ta, budjet: ' + h(e.lead.budget) + ', sana: ' + h(e.lead.date) + '\n' + h(e.lead.comment) + (e.lead.logo ? '\nLogo: ' + PUBLIC_URL + e.lead.logo : ''));
     else if (e.type === 'booking_new') toAdmins('🧑‍🍳 Master-klassga yozilish: ' + h(e.cls.title.uz) + ' (' + e.cls.date + ' ' + h(e.cls.time) + ')\n' + h(e.booking.name) + ' ' + h(e.booking.phone) + ' · ' + e.booking.seats + ' joy');
@@ -375,7 +392,9 @@ db.tgConvos = db.tgConvos || {};
 const DN = { andijon_sh: 'Andijon shahri', andijon_t: 'Andijon tumani', asaka: 'Asaka', baliqchi: 'Baliqchi', boz: 'Boʻz', buloqboshi: 'Buloqboshi', izboskan: 'Izboskan', jalaquduq: 'Jalaquduq', xojaobod: 'Xoʻjaobod', qorgontepa: 'Qoʻrgʻontepa', marhamat: 'Marhamat', oltinkol: 'Oltinkoʻl', paxtaobod: 'Paxtaobod', shahrixon: 'Shahrixon', ulugnor: 'Ulugʻnor', xonobod: 'Xonobod shahri' };
 function customerMenu() {
   const row1 = [{ text: '🍫 Menyu', callback_data: 'c:menu' }, { text: '💬 Opa bilan', callback_data: 'c:human' }];
-  return kb(PUBLIC_URL ? [row1, [{ text: '🛍 Saytda buyurtma', url: PUBLIC_URL }]] : [row1]);
+  if (!PUBLIC_URL) return kb([row1]);
+  const shop = /^https:/.test(PUBLIC_URL) ? { text: '🛍 Doʻkonni ochish', web_app: { url: PUBLIC_URL } } : { text: '🛍 Saytda buyurtma', url: PUBLIC_URL };
+  return kb([[shop], row1]);
 }
 async function sendMenu(chatId) {
   const cat = L.handle(db, 'catalog', {}, { events: [] });
@@ -495,6 +514,12 @@ const server = http.createServer(async (req, res) => {
         const u = L.upsertUser(db, { tgId: String(body.id), name: [body.first_name, body.last_name].filter(Boolean).join(' '), username: body.username, photo: body.photo_url }, { now: Date.now() });
         save(); return send(res, 200, { data: { token: sign({ u: u.id, exp: Date.now() + 90 * 864e5 }) } });
       }
+      if (route === 'auth/webapp') {
+        const wu = checkWebApp(body.initData);
+        if (!wu || !wu.id) return send(res, 401, { error: 'bad_auth' });
+        const u = L.upsertUser(db, { tgId: String(wu.id), name: [wu.first_name, wu.last_name].filter(Boolean).join(' '), username: wu.username, photo: wu.photo_url }, { now: Date.now() });
+        save(); return send(res, 200, { data: { token: sign({ u: u.id, exp: Date.now() + 90 * 864e5 }) } });
+      }
       if (route === 'admin/login') {
         if (limited(ip, 'alogin', 8)) return send(res, 429, { error: 'slow_down' });
         const a = Buffer.from(String(body.password || '')), b = Buffer.from(ADMIN_PASSWORD);
@@ -555,6 +580,8 @@ server.listen(PORT, async () => {
   if (BOT && PUBLIC_URL) {
     const ok = await tg('setWebhook', { url: PUBLIC_URL + '/tg/hook', secret_token: SECRET.slice(0, 32), allowed_updates: ['message', 'callback_query'] });
     console.log('webhook', ok ? 'set' : 'not set');
+    // Telegram Mini App: the shop opens inside the bot from the menu button
+    if (/^https:/.test(PUBLIC_URL)) tg('setChatMenuButton', { menu_button: { type: 'web_app', text: '🛍 Doʻkon', web_app: { url: PUBLIC_URL } } });
   }
 });
 process.on('SIGTERM', () => { clearTimeout(saveTimer); try { fs.writeFileSync(DB_FILE, JSON.stringify(db)); } catch (e) {} process.exit(0); });

@@ -312,6 +312,38 @@
     M._modalClose = function () { history.replaceState(null, '', location.pathname); };
   };
 
+  /* ---------------- chocolate passport (#pass-CODE, from the QR on the box) ---------------- */
+  M.passView = async function (code) {
+    var p;
+    try { p = await API.call('passport', { code: code }); } catch (e) { M.err(e); return; }
+    var d = new Date(p.made), made = ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear();
+    var items = p.lines.map(function (l) {
+      return '<li><span class="pth">' + M.lineThumb(l) + '</span><span><b>' + esc(M.lineName(l)) + '</b><small>' + esc(M.lineSub(l) || '') + '</small></span><em>× ' + l.qty + '</em></li>';
+    }).join('');
+    var stars = [1, 2, 3, 4, 5].map(function (n) { return '<button type="button" data-st="' + n + '" aria-label="' + n + '">★</button>'; }).join('');
+    M.modal('<div class="passv"><div class="pv-top"><span class="pv-seal">' + document.getElementById('tpl-crown').innerHTML + '</span><p class="pv-brand serif gold">' + esc(p.brand) + '</p><h2 class="serif">' + t('pass_title') + '</h2>' +
+      '<p class="hint">' + t('pass_order', p.id) + (p.first ? ' · ' + t('pass_for', esc(p.first)) : '') + '</p></div>' +
+      '<div class="pv-meta"><div><small>' + t('pass_made') + '</small><b>' + made + '</b></div>' + (p.maker ? '<div><small>' + t('pass_maker') + '</small><b>' + esc(p.maker) + '</b></div>' : '') + '</div>' +
+      (p.photos.length ? '<h4>📸 ' + t('pass_photos') + '</h4><div class="ophs big">' + p.photos.map(function (u) { return '<img src="' + esc(u) + '" alt="">'; }).join('') + '</div>' : '') +
+      '<h4>🍫 ' + t('pass_inside') + '</h4><ul class="pv-list">' + items + '</ul>' +
+      (p.engrave ? '<p>✍ ' + t('pass_engr') + ': <b>' + esc(p.engrave) + '</b></p>' : '') +
+      (p.storage ? '<h4>❄ ' + t('pass_store') + '</h4><p class="pv-store">' + esc(p.storage) + '</p>' : '') +
+      '<div class="pv-rate" id="pvRate">' + (p.rated ? '<p class="hint">' + t('pass_rated') + '</p>' :
+        '<h4>' + t('pass_rate') + '</h4><div class="pv-stars" id="pvStars">' + stars + '</div><form class="stack" id="pvF" hidden><textarea class="ta" name="tx" maxlength="600" placeholder="' + t('pass_rate_ph') + '"></textarea><button class="order" type="submit">' + t('pass_send') + '</button></form>') + '</div></div>', true);
+    var chosen = 0, sw = $('#pvStars');
+    if (sw) sw.onclick = function (e) {
+      var b = e.target.closest('[data-st]'); if (!b) return; chosen = +b.dataset.st;
+      $$('#pvStars button').forEach(function (x) { x.classList.toggle('on', +x.dataset.st <= chosen); });
+      $('#pvF').hidden = false;
+    };
+    var f = $('#pvF');
+    if (f) f.onsubmit = async function (e) {
+      e.preventDefault(); if (!chosen) return;
+      try { await M.call('passportRate', { code: code, stars: chosen, text: this.tx.value }); $('#pvRate').innerHTML = '<p class="hint">' + t('pass_thanks') + '</p>'; FX.burst(innerWidth / 2, innerHeight / 2, 30, true); } catch (er) {}
+    };
+    M._modalClose = function () { if (/^#pass-/.test(location.hash)) history.replaceState(null, '', location.pathname); };
+  };
+
   /* ---------------- wishlist page (#wish-code) ---------------- */
   M.wishView = async function (code) {
     var w;

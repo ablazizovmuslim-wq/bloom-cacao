@@ -67,6 +67,11 @@
       var j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || 'auth');
       ls(TOK, j.data.token); return j.data;
     },
+    webappLogin: async function (initData) {
+      var r = await fetch('/api/auth/webapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ initData: initData }) });
+      var j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || 'auth');
+      ls(TOK, j.data.token); return j.data;
+    },
     logout: function () { ls(UID, null); ls(TOK, null); },
     adminLogin: async function (password) {
       await this.ready;

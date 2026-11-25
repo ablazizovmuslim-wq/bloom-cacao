@@ -718,3 +718,29 @@ body[data-mode=day] .aicard{background:#fff;border-color:#efe4d4;color:#3e2a18}
 @keyframes micp{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.45)}50%{box-shadow:0 0 0 9px rgba(192,57,43,0)}}
 .msg .vplay{display:inline-flex;margin-top:8px;padding:6px 12px;border-radius:999px;border:1px solid #cfae73;background:#fff8ea;color:#4a2f1a;font:inherit;font-size:13px;cursor:pointer}
 html.still .chatf .mic.on{animation:none}
+
+/* order photos (account) + chocolate passport */
+.ophs{display:flex;gap:8px;flex-wrap:wrap}
+.ophs img{width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid #e8dcc4;display:block}
+.ophs.big img{width:calc(50% - 4px);height:auto;aspect-ratio:1;border-radius:16px}
+.passv{text-align:left;max-width:520px;margin:0 auto}
+.passv .pv-top{text-align:center;margin-bottom:10px}
+.passv .pv-seal{display:inline-block;width:54px;height:54px}.passv .pv-seal svg{width:100%;height:100%}
+.passv .pv-brand{font-size:20px;margin:4px 0 0;letter-spacing:.05em}
+.passv h2{font-size:30px;margin:2px 0 4px}
+.passv h4{margin:18px 0 8px;font-size:15px;letter-spacing:.03em}
+.pv-meta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.pv-meta div{flex:1 1 140px;max-width:220px;border:1px solid #e8dcc4;border-radius:14px;padding:10px 12px;text-align:center;background:#fffaf0}
+.pv-meta small{display:block;color:#8a7560;font-size:12px}.pv-meta b{font-size:16px}
+.pv-list{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.pv-list li{display:flex;align-items:center;gap:12px;border-bottom:1px dashed #e8dcc4;padding:6px 0}
+.pv-list .pth{width:52px;height:52px;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:12px}
+.pv-list .pth img{width:100%;height:100%;object-fit:cover}
+.pv-list span:nth-child(2){flex:1;display:flex;flex-direction:column}.pv-list small{color:#8a7560}
+.pv-list em{font-style:normal;color:#9c7128;font-weight:600}
+.pv-store{background:#f3f8f6;border-radius:14px;padding:12px 14px;margin:0}
+.pv-rate{margin-top:16px;text-align:center}
+.pv-stars{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+.pv-stars button{font-size:34px;line-height:1;background:none;border:0;color:#d9cbb0;cursor:pointer;transition:transform .15s,color .15s}
+.pv-stars button.on{color:#d4a017;transform:scale(1.12)}
+html.tgapp #demoTag{display:none!important}
