@@ -77,7 +77,7 @@
     mt.setAttribute('aria-label', t('menu_title'));
     var ci = 0; mt.innerHTML = t('menu_title').split(' ').map(function (w) { return '<span style="white-space:nowrap;display:inline-block">' + w.split('').map(function (c) { return '<span class="ch" style="--i:' + (ci++) + '">' + esc(c) + '</span>'; }).join('') + '</span>'; }).join(' ');
     if (soft) mt.classList.add('in');
-    var f = [['all', 'f_all'], ['shok', 'f_shok'], ['choy', 'f_choy'], ['boks', 'f_boks'], ['fav', 'f_fav']];
+    var f = [['all', 'f_all'], ['shok', 'f_shok'], ['choy', 'f_choy'], ['boks', 'f_boks'], ['zefir', 'f_zefir'], ['fav', 'f_fav']];
     $('#filters').innerHTML = f.map(function (x) { return '<button type="button" class="chip' + (S.filter === x[0] ? ' on' : '') + '" data-f="' + x[0] + '">' + t(x[1]) + (x[0] === 'fav' ? ' ♥' : '') + '</button>'; }).join('');
   }
 

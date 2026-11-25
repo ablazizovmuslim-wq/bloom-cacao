@@ -719,7 +719,7 @@
     'admin.product': function (db, b, ctx) {
       needAdmin(ctx);
       var ex = b.id && db.products.find(function (x) { return x.id === b.id; }), wasLeft = ex ? ex.left : 0;
-      var clean = { id: ex ? ex.id : 'p' + ctx.now.toString(36), cat: ['shok', 'choy', 'boks'].indexOf(b.cat) >= 0 ? b.cat : 'shok',
+      var clean = { id: ex ? ex.id : 'p' + ctx.now.toString(36), cat: ['shok', 'choy', 'boks', 'zefir'].indexOf(b.cat) >= 0 ? b.cat : 'shok',
         price: Math.max(0, int(b.price)), total: Math.max(0, int(b.total)), img: str(b.img || (ex && ex.img) || 'img/p1.jpg', 2000000),
         active: b.active !== false, name: L3(b.name, 120), sub: L3(b.sub, 120), holiday: str(b.holiday, 20), dropAt: Math.max(0, int(b.dropAt)) };
       clean.left = ex ? Math.max(0, Math.min(ex.left + (clean.total - ex.total), clean.total)) : clean.total;

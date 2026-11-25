@@ -75,7 +75,7 @@
     menu_title: ['BUGUNGI MENYU', 'МЕНЮ ДНЯ', "TODAY'S MENU"],
     menu_lead: ['Har kuni cheklangan miqdorda, qoʻlda tayyorlanadi', 'Каждый день в ограниченном количестве, вручную', 'Handmade daily, in limited quantities'],
     menu_timer: ['Menyu yangilanishiga', 'Меню обновится через', 'Menu refreshes in'],
-    f_all: ['Hammasi', 'Все', 'All'], f_shok: ['Shokoladlar', 'Шоколад', 'Chocolate'], f_choy: ['Gulli choylar', 'Цветочный чай', 'Flower tea'], f_boks: ['Bokslar', 'Боксы', 'Boxes'], f_fav: ['Sevimlilar', 'Избранное', 'Favourites'], menu_soon: ['Tez orada bu yerda yangi shirinliklar paydo boʻladi ✨', 'Скоро здесь появятся новые сладости ✨', 'New treats are coming here soon ✨'],
+    f_all: ['Hammasi', 'Все', 'All'], f_shok: ['Shokoladlar', 'Шоколад', 'Chocolate'], f_choy: ['Gulli choylar', 'Цветочный чай', 'Flower tea'], f_boks: ['Bokslar', 'Боксы', 'Boxes'], f_zefir: ['Zefir guldastalar', 'Зефирные букеты', 'Marshmallow bouquets'], f_fav: ['Sevimlilar', 'Избранное', 'Favourites'], menu_soon: ['Tez orada bu yerda yangi shirinliklar paydo boʻladi ✨', 'Скоро здесь появятся новые сладости ✨', 'New treats are coming here soon ✨'],
     left_today: ['BUGUNGA QOLDI: {0} dona', 'ОСТАЛОСЬ СЕГОДНЯ: {0} шт', 'LEFT TODAY: {0} pcs'],
     add: ['Savatga qoʻshish', 'В корзину', 'Add to cart'],
     in_cart: ['Savatda: {0} · yana', 'В корзине: {0} · ещё', 'In cart: {0} · more'],
