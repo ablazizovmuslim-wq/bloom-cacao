@@ -116,13 +116,10 @@
       },
       products: [
         P('p1', 'shok', 185000, 30, 'img/p1.jpg', ['Premium bon-bonlar toʻplami', 'Премиум набор бон-бонов', 'Premium bonbon set'], ['12 dona', '12 шт', '12 pcs']),
-        P('p2', 'shok', 75000, 40, 'img/p2.jpg', ['Pista va qora shokolad bar', 'Тёмный шоколад с фисташкой', 'Dark chocolate & pistachio bar'], ['100 g', '100 г', '100 g']),
-        P('p3', 'choy', 45000, 50, 'img/p3.jpg', ['Gulli choy kubigi', 'Кубик цветочного чая', 'Flower tea cube'], ['Atirgul va asal', 'Роза и мёд', 'Rose & honey']),
-        P('p4', 'shok', 80000, 30, 'img/p4.jpg', ['Malinali oq shokolad bar', 'Белый шоколад с малиной', 'White chocolate & raspberry bar'], ['100 g', '100 г', '100 g']),
         P('p5', 'boks', 250000, 20, 'img/p5.jpg', ['Shokolad va gulli choy boks', 'Бокс: шоколад и цветочный чай', 'Chocolate & flower tea box'], ['Mini toʻplam', 'Мини-набор', 'Mini set'])
       ],
       users: [], orders: [], txs: [], topups: [], reviews: [], promos: [], leads: [], chats: [],
-      classes: [], bookings: [], wishlists: [], notify: []
+      classes: [], bookings: [], wishlists: [], notify: [], mig: 3
     };
     function P(id, cat, price, total, img, n, s) {
       return { id: id, cat: cat, price: price, total: total, left: total, img: img, active: true, holiday: '', dropAt: 0,
@@ -833,10 +830,11 @@
     Object.keys(sd).forEach(function (k) { if (db.settings[k] === undefined) db.settings[k] = sd[k]; });
     if (!db.settings.agents) db.settings.agents = sd.agents;
     ['shapes', 'colors', 'finishes'].forEach(function (k) { if (!db.settings.bonbon[k]) db.settings.bonbon[k] = sd.bonbon[k]; });
+    db.products = db.products.filter(function (p) { return !(['p2', 'p3', 'p4'].indexOf(p.id) >= 0 && p.img === 'img/' + p.id + '.jpg'); });
     (db.orders || []).forEach(function (o) { if (!o.pass) o.pass = code('') + code(''); if (!o.photos) o.photos = []; });
   }
   function handle(db, route, body, ctx) {
-    if (!db.settings.kits || !db.settings.bonbon || !db.settings.brand || !db.settings.bonbon.shapes || !db.settings.agents) migrate(db);
+    if ((db.mig || 0) < 3) { migrate(db); db.mig = 3; }
     ctx.now = ctx.now || Date.now();
     ctx.rnd = ctx.rnd || Math.random;
     ctx.events = ctx.events || [];

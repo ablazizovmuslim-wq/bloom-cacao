@@ -91,7 +91,7 @@
       return S.filter === 'all' || p.cat === S.filter;
     });
     $('#grid').innerHTML = list.map(function (p, i) { return card(p, i, favs, now, keep); }).join('') ||
-      '<p class="lead corm">' + (S.filter === 'fav' ? t('wish_lead') : '') + '</p>';
+      '<p class="lead corm" style="text-align:center;margin:30px auto">' + (S.filter === 'fav' ? t('wish_lead') : t('menu_soon')) + '</p>';
     // holiday collection
     var h = S.cat.holiday, col = $('#collection');
     var hp = h ? S.cat.products.filter(function (p) { return p.holiday === h.id; }) : [];
