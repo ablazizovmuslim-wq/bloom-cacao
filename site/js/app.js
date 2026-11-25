@@ -107,7 +107,7 @@
     var notified = S.me && S.me.notify && S.me.notify.indexOf(p.id) >= 0;
     var btn = locked ? '<button class="add" type="button" disabled>' + t('drop_locked') + '</button>'
       : sold ? '<button class="add notify" type="button" data-notify="' + p.id + '"' + (notified ? ' disabled' : '') + '>' + t(notified ? 'notify_on' : 'notify_me') + '</button>'
-        : '<button class="add drip" type="button" data-add="' + p.id + '">' + (inC ? t('in_cart', inC) : t('add')) + '</button>';
+        : '<button class="add drip' + (inC ? ' inc' : '') + '" type="button" data-add="' + p.id + '">' + (inC ? t('in_cart', inC) : t('add')) + '</button>';
     var tag = p.deal ? '<span class="ribbonTag">' + t('deal', S.cat.settings.dealPercent) + '</span>' : p.dropAt ? '<span class="ribbonTag">' + t('drop_soon') + '</span>' : '';
     var leftTxt = p.dropAt && !locked ? t('drop_live', left) : t('left_today', left);
     return '<article class="card' + (keep ? ' in' : '') + (locked ? ' locked' : '') + '" style="--i:' + i + '" data-id="' + p.id + '">' + tag +
@@ -241,7 +241,12 @@
     $('#filters').addEventListener('click', function (e) { var b = e.target.closest('[data-f]'); if (!b) return; S.filter = b.dataset.f; $$('#filters .chip').forEach(function (x) { x.classList.toggle('on', x === b); }); M.renderMenu(); FX.observe($('#menu')); });
     document.addEventListener('click', function (e) {
       var a = e.target.closest('[data-add]');
-      if (a) { var c = a.closest('.card'); M.addLine({ type: 'product', id: a.dataset.add, qty: 1 }, c && c.querySelector('img')); return; }
+      if (a) {
+        var c = a.closest('.card'), pid = a.dataset.add;
+        M.addLine({ type: 'product', id: pid, qty: 1 }, c && c.querySelector('img'));
+        setTimeout(function () { $$('[data-add="' + pid + '"]').forEach(function (x) { x.classList.remove('bump'); void x.offsetWidth; x.classList.add('bump'); }); }, 30);
+        return;
+      }
       var f = e.target.closest('[data-fav]'); if (f) { M.toggleFav(f.dataset.fav, f); return; }
       var n = e.target.closest('[data-notify]'); if (n) { notify(n.dataset.notify); return; }
       var cp = e.target.closest('[data-copy]'); if (cp) { copy(cp.dataset.copy); return; }
@@ -295,7 +300,7 @@
   M.renderCart = renderCart;
 
   function cartStep1() {
-    if (!S.cart.length) return '<div class="db"><p class="empty corm" style="text-align:center;font-size:22px;margin-top:40px">' + t('empty') + '</p></div>';
+    if (!S.cart.length) return '<div class="db cart-empty"><div class="ce-ico">' + document.getElementById('tpl-crown').innerHTML + '</div><p class="empty corm">' + t('empty') + '</p><p class="hint">' + t('empty_hint') + '</p><a class="cta sm" href="#menu" data-gomenu>' + t('to_menu') + '</a></div>';
     var items = 0;
     var rows = S.cart.map(function (l, i) {
       var p = M.linePrice(l), sum = p * (l.qty || 1); items += sum;
@@ -308,6 +313,7 @@
   }
   function bindStep1(d) {
     d.onclick = function (e) {
+      if (e.target.closest('[data-gomenu]')) { M.drawer('cartD', false); return; }
       var m = e.target.closest('[data-m]'), p = e.target.closest('[data-p]'), r = e.target.closest('[data-rm]');
       if (m) { var l = S.cart[+m.dataset.m]; l.qty--; if (l.qty <= 0) S.cart.splice(+m.dataset.m, 1); }
       else if (p) { var l2 = S.cart[+p.dataset.p]; if (l2.type === 'product') { var pr = M.prod(l2.id); if (pr && M.inCart(pr.id) >= pr.left) { M.toast(t('err_no_stock'), true); return; } } l2.qty++; }
