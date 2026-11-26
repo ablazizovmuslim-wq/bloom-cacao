@@ -16,7 +16,14 @@ const BOT_USERNAME = (process.env.BOT_USERNAME || '').replace(/^@/, '');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const ADMIN_CHATS = (process.env.ADMIN_CHAT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-const SECRET = process.env.SESSION_SECRET || crypto.createHash('sha256').update('mavi:' + BOT + ADMIN_PASSWORD).digest('hex');
+// session secret: env, or a random one generated once and kept on the data disk
+const SECRET = process.env.SESSION_SECRET || (() => {
+  const f = path.join(DATA, 'secret.key');
+  try { return fs.readFileSync(f, 'utf8').trim(); } catch (e) {}
+  const k = crypto.randomBytes(32).toString('hex');
+  try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(f, k, { mode: 0o600 }); } catch (e) {}
+  return k;
+})();
 const AI_KEY = process.env.ANTHROPIC_API_KEY || '';
 const AI_MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const L = require(path.join(SITE, 'js', 'logic.js'));
