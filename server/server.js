@@ -14,6 +14,8 @@ const PORT = +process.env.PORT || 3000;
 const BOT = process.env.BOT_TOKEN || '';
 const BOT_USERNAME = (process.env.BOT_USERNAME || '').replace(/^@/, '');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+// several admins: ADMIN_PASSWORD (opa), ADMIN_PASSWORD_2 (uka) ...
+const ADMIN_PASSWORDS = [ADMIN_PASSWORD, process.env.ADMIN_PASSWORD_2, process.env.ADMIN_PASSWORD_3].filter((p) => p && p.length >= 4);
 const ADMIN_CHATS = (process.env.ADMIN_CHAT_IDS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
 // session secret: env, or a random one generated once and kept on the data disk
@@ -529,8 +531,9 @@ const server = http.createServer(async (req, res) => {
       }
       if (route === 'admin/login') {
         if (limited(ip, 'alogin', 8)) return send(res, 429, { error: 'slow_down' });
-        const a = Buffer.from(String(body.password || '')), b = Buffer.from(ADMIN_PASSWORD);
-        if (!ADMIN_PASSWORD || a.length !== b.length || !crypto.timingSafeEqual(a, b)) return send(res, 401, { error: 'bad_password' });
+        const a = Buffer.from(String(body.password || ''));
+        const ok = ADMIN_PASSWORDS.some((pw) => { const b = Buffer.from(pw); return a.length === b.length && crypto.timingSafeEqual(a, b); });
+        if (!ok) return send(res, 401, { error: 'bad_password' });
         return send(res, 200, { data: { token: sign({ a: 1, exp: Date.now() + 30 * 864e5 }) } });
       }
       const tok = verify((req.headers.authorization || '').replace(/^Bearer /, ''));
