@@ -507,7 +507,8 @@ function serveFile(res, file, cache) {
 }
 
 const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://x'), p = decodeURIComponent(url.pathname);
+  let url, p;
+  try { url = new URL(req.url, 'http://x'); p = decodeURIComponent(url.pathname); } catch (e) { res.writeHead(400); return res.end('bad request'); }
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
   try {
     if (p === '/healthz') return send(res, 200, { ok: true });
