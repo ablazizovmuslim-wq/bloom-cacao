@@ -27,7 +27,7 @@
       try { await API.adminLogin(this.p.value); await load(); } catch (er) { toast('Parol notoʻgʻri', true); }
     };
   }
-  var TABS = [['orders', 'Buyurtmalar'], ['products', 'Mahsulotlar'], ['topups', 'Toʻldirishlar'], ['users', 'Mijozlar'], ['reviews', 'Sharhlar'], ['promos', 'Promokodlar'],
+  var TABS = [['orders', 'Buyurtmalar'], ['luck', '🍀 Omad'], ['products', 'Mahsulotlar'], ['topups', 'Toʻldirishlar'], ['users', 'Mijozlar'], ['reviews', 'Sharhlar'], ['promos', 'Promokodlar'],
     ['chat', 'Chat'], ['classes', 'Master-klass'], ['leads', 'Korporativ'], ['settings', 'Sozlamalar']];
   function badge(k) {
     if (k === 'orders') return D.orders.filter(function (o) { return o.status === 'new'; }).length;
@@ -79,6 +79,22 @@
     document.body.appendChild(w);
     w.addEventListener('click', function (ev) { var b = ev.target.closest('[data-pa]'); if (!b) return; if (b.dataset.pa === 'print') window.print(); else w.remove(); });
   }
+  function luckPrint(list) {
+    if (!list || !list.length) return;
+    var base = (API.mode === 'demo' ? location.href.replace(/admin\.html.*$/, 'index.html') : location.origin + '/');
+    var brand = esc(D.settings.brand || 'Bloom & Cacao'), host = esc(base.replace(/^https?:\/\//, '').replace(/\/.*$/, ''));
+    var pn = function (id) { var p = ((D.settings.luck || {}).prizes || []).find(function (x) { return x.id === id; }); return p ? p.name.uz : id; };
+    var cards = list.map(function (c) {
+      var q = qrcode(0, 'M'); q.addData(base + '#luck-' + c.code); q.make();
+      return '<div class="stk lk"><div class="stk-b">' + brand + '</div><div class="stk-t">🍀 Omad qogʻozchasi</div><div class="lk-p">Sizga sovgʻa:<br><b>' + esc(pn(c.prize)) + '</b></div><div class="stk-q lk-q">' + q.createSvgTag({ cellSize: 3, margin: 0, scalable: true }) + '</div>' +
+        '<div class="lk-c">' + esc(c.code) + '</div><div class="stk-s">' + host + ' → Kabinet → kodni yozing.<br>Keyingi buyurtmangizga qoʻshib beramiz 🤍</div></div>';
+    }).join('');
+    var w = document.createElement('div'); w.id = 'printArea';
+    w.innerHTML = '<div class="pa-bar"><b>Omad qogʻozchalari — ' + list.length + ' ta</b><span><button class="btn pri" data-pa="print">🖨 Chop etish</button> <button class="btn" data-pa="close">Yopish</button></span></div>' +
+      '<p class="muted pa-hint">Qirqib, ikki buklab, kuryerning idishchasiga soling. Har bir kod faqat bir marta ishlaydi.</p><div class="pa-sheet">' + cards + '</div>';
+    document.body.appendChild(w);
+    w.addEventListener('click', function (ev) { var b = ev.target.closest('[data-pa]'); if (!b) return; if (b.dataset.pa === 'print') window.print(); else w.remove(); });
+  }
   app.addEventListener('click', async function (e) {
     var b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; render(); return; }
     if (e.target.closest('[data-out]')) { API.adminLogout(); loginView(); return; }
@@ -87,6 +103,8 @@
     try {
       if (act === 'status') { await call('admin.status', { id: +id, status: a.dataset.s }); }
       else if (act === 'ophotoDel') { await call('admin.orderPhoto', { id: +id, remove: +a.dataset.i }); }
+      else if (act === 'luckGen') { var made = await call('admin.luckGen', { n: +(document.getElementById('lkN').value || 6) }); await load(); luckPrint(made); return; }
+      else if (act === 'luckPrint') { luckPrint((D.luckCodes || []).filter(function (c) { return !c.used; })); return; }
       else if (act === 'qr') { qrSticker(D.orders.find(function (o) { return o.id === +id; })); return; }
       else if (act === 'postPreview' || act === 'postNow') {
         var pv = document.getElementById('postPv');
@@ -117,7 +135,7 @@
     if (l.type === 'bar') return 'Plitka: ' + nm(s.bars, l.base) + ' + ' + l.tops.map(function (c) { return nm(s.toppings, c); }).join(', ');
     if (l.type === 'toy') return 'TOʻY: ' + l.guests + ' mehmon, ' + nm(s.toyPacks, l.pack) + ', lenta: ' + l.ribbon;
     if (l.type === 'club') return 'Club: ' + l.months + ' oy';
-    if (l.type === 'kit') return 'BOKS ' + nm(s.kits, l.kit) + ' — idishchalar: ' + l.cups.map(function (c) { return nm(s.cupItems, c); }).join(', ');
+    if (l.type === 'kit') return 'BOKS ' + nm(s.kits, l.kit) + ' — idishchalar: ' + l.cups.map(function (c) { return nm(s.cupItems, c); }).join(', ') + (l.dear ? ' · 💝 «Qadrli insonimga» yozuvi' : '');
     if (l.type === 'bonbon') { var b = s.bonbon; return 'Bon-bon: ' + nm(b.shapes || [], l.shape) + ', ' + nm(b.colors || [], l.color) + ' rang, ' + nm(b.finishes || [], l.finish) + ' bezak, ' + nm(b.shells, l.shell) + ' qobiq, ' + nm(b.l1, l.l1) + ' + ' + nm(b.l2, l.l2) + ', ustiga ' + nm(b.dust, l.dust); }
     return (l.name ? l.name.uz : l.id) + (l.deal ? ' (kun shokoladi)' : '');
   }
@@ -132,6 +150,7 @@
             '<div class="muted">' + dt(o.created) + ' · Sana: <b>' + o.date + '</b> ' + esc(o.time) + (o.preorder ? ' · OLDINDAN' : '') + ' · ' + DN[o.district] + ', ' + esc(o.address) + '</div>' +
             (o.gift ? '<div>🎁 Sovgʻa: <b>' + esc(o.gift.to) + '</b> ' + esc(o.gift.phone) + (o.gift.secret ? ' (kimdanligi sir)' : '') + (o.gift.opened ? ' · ochildi ✓' + (o.gift.thanks ? ' «' + esc(o.gift.thanks) + '»' : '') : '') + '</div>' : '') +
             '<ul class="lines">' + o.lines.map(function (l) { return '<li>' + esc(lineText(l)) + ' × ' + l.qty + ' = ' + som(l.sum) + '</li>'; }).join('') + '</ul>' +
+            (o.bonus && o.bonus.length ? '<div style="background:#eef7e8;border-radius:8px;padding:6px 8px;margin:4px 0">🍀 <b>Qoʻshib bering (omad sovgʻasi):</b> ' + esc(o.bonus.join(', ')) + '</div>' : '') +
             (o.engrave ? '<div>✍ Shokoladga ism: <b>' + esc(o.engrave) + '</b></div>' : '') +
             (o.card && o.card.text ? '<div>💌 Tabriknoma (' + esc(o.card.design) + '): «' + esc(o.card.text) + '»</div>' : '') +
             (o.card && o.card.voice ? '<div>🎙 <audio controls src="' + esc(o.card.voice) + '"></audio></div>' : '') +
@@ -202,6 +221,24 @@
           (l.logo ? '<img src="' + esc(l.logo) + '" style="max-width:160px;max-height:90px;background:#fff;padding:6px;border-radius:8px">' : '') + (l.status !== 'done' ? '<div><button class="btn pri" data-act="lead" data-id="' + l.id + '">Bajarildi</button></div>' : '') + '</div>';
       }).join('') || '<p class="muted">Soʻrov yoʻq</p>');
     },
+    luck: function () {
+      var L = D.settings.luck || { on: false, prizes: [] }, codes = D.luckCodes || [];
+      var pn = function (id) { var p = (L.prizes || []).find(function (x) { return x.id === id; }); return p ? p.name.uz : id; };
+      var KN = { shokolad: 'Shokolad', bezak: 'Bezak', qolip: 'Qolip' };
+      var free = codes.filter(function (c) { return !c.used; }), used = codes.filter(function (c) { return c.used; });
+      return '<h2>🍀 Omad qogʻozchalari</h2>' +
+        '<div class="card"><p class="muted">Kuryer idishchada 5–6 ta buklangan qogʻozcha olib boradi. Mijoz bittasini oladi, ichidagi kodni saytda («Kabinet» → «Omad qogʻozchasi») yozadi — sovgʻa <b>keyingi buyurtmasiga</b> avtomatik qoʻshiladi va buyurtmada 🍀 bilan koʻrinadi. Shokolad + bezak + qolip yigʻilsa — mijoz oʻzi bon-bon tayyorlaydi.</p>' +
+        '<div class="row" style="gap:8px;flex-wrap:wrap;justify-content:flex-start"><label style="display:flex;align-items:center;gap:6px">Nechta? <input id="lkN" type="number" min="1" max="60" value="6" style="width:70px"></label><button class="btn pri" data-act="luckGen">➕ Yaratish va chop etish</button>' +
+        (free.length ? '<button class="btn" data-act="luckPrint">🖨 Ishlatilmaganlarni chop etish (' + free.length + ')</button>' : '') + '</div></div>' +
+        '<div class="card"><h3>Sovgʻalar</h3><p class="muted">«Ehtimol» — qanchalik tez-tez chiqishi (0 = chiqmaydi). Turi: shokolad / bezak / qolip.</p><form id="lkF"><div class="g2">' +
+        (L.prizes || []).map(function (p, i) { return '<label>Nomi<input name="ln_' + i + '" value="' + esc(p.name.uz) + '"></label><label>Turi / ehtimol<span style="display:flex;gap:6px"><select name="lk_' + i + '">' + ['shokolad', 'bezak', 'qolip'].map(function (k) { return '<option value="' + k + '"' + (p.kind === k ? ' selected' : '') + '>' + KN[k] + '</option>'; }).join('') + '</select><input name="lw_' + i + '" type="number" min="0" max="10" value="' + p.w + '" style="width:70px"></span></label>'; }).join('') +
+        '<label>Yangi sovgʻa: nomi<input name="ln_new" placeholder="Masalan: Kokos qirindisi"></label><label>Turi / ehtimol<span style="display:flex;gap:6px"><select name="lk_new"><option value="bezak">Bezak</option><option value="shokolad">Shokolad</option><option value="qolip">Qolip</option></select><input name="lw_new" type="number" min="0" max="10" value="2" style="width:70px"></span></label>' +
+        '<label>Holati<select name="lk_on"><option value="1"' + (L.on ? ' selected' : '') + '>Yoqilgan (saytda koʻrinadi)</option><option value="0"' + (L.on ? '' : ' selected') + '>Oʻchiq</option></select></label></div><button class="btn pri" type="submit" style="margin-top:10px">Saqlash</button></form></div>' +
+        '<div class="card"><h3>Kodlar (' + codes.length + ' ta · ishlatilgan: ' + used.length + ')</h3>' + (codes.length ? '<div style="max-height:420px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">' + codes.map(function (c) {
+          var u = c.used ? D.users.find(function (x) { return x.id === c.used; }) : null;
+          return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px;font-family:monospace">' + esc(c.code) + '</td><td>' + esc(pn(c.prize)) + '</td><td class="muted">' + (c.used ? '✅ ' + esc(u ? u.name : c.used) + ' · ' + dt(c.at) : 'kutmoqda') + '</td></tr>';
+        }).join('') + '</table></div>' : '<p class="muted">Hali kod yoʻq — yuqoridan yarating.</p>') + '</div>';
+    },
     settings: function () {
       var yn = function (k, lab, on) { return '<label>' + lab + '<select name="' + k + '"><option value="1"' + (on ? ' selected' : '') + '>Yoqilgan</option><option value="0"' + (on ? '' : ' selected') + '>Oʻchiq</option></select></label>'; };
       var s = D.settings, inp = function (k, lab, type) { return '<label>' + lab + '<input name="' + k + '" type="' + (type || 'text') + '" value="' + esc(s[k]) + '"></label>'; };
@@ -247,6 +284,13 @@
       else if (f.classList.contains('reply')) await call('admin.chatReply', { id: +f.dataset.c, text: f.t.value });
       else if (f.id === 'setF') await saveSettings(f);
       else if (f.id === 'prodF') await saveProduct(f);
+      else if (f.id === 'lkF') {
+        var old = (D.settings.luck || {}).prizes || [], pr = [];
+        old.forEach(function (p, i) { var nm = f['ln_' + i].value.trim(); if (!nm) return; pr.push({ id: p.id, kind: f['lk_' + i].value, w: +f['lw_' + i].value, name: nm === p.name.uz ? p.name : { uz: nm } }); });
+        var nn = f.ln_new.value.trim();
+        if (nn) pr.push({ id: 'x' + Date.now().toString(36), kind: f.lk_new.value, w: +f.lw_new.value, name: { uz: nn } });
+        await call('admin.luckPrizes', { on: f.lk_on.value === '1', prizes: pr });
+      }
       else return;
       await load(); toast('Saqlandi ✓');
     } catch (er) {}

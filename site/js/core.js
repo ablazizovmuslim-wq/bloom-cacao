@@ -88,7 +88,7 @@
     if (l.type === 'box') { var pk = M.findIn(s.packaging, l.pack); return M.tl(pk && pk.name); }
     if (l.type === 'bar') return l.tops.map(function (t) { return M.tl((M.findIn(s.toppings, t) || {}).name); }).join(', ');
     if (l.type === 'product') { var pr = M.prod(l.id); return pr ? M.tl(pr.sub) : ''; }
-    if (l.type === 'kit') return l.cups.map(function (c) { return M.tl((M.findIn(s.cupItems, c) || {}).name); }).join(' + ');
+    if (l.type === 'kit') return l.cups.map(function (c) { return M.tl((M.findIn(s.cupItems, c) || {}).name); }).join(' + ') + (l.dear ? ' · 💝 «' + M.t('kit_dear_lid') + '»' : '');
     if (l.type === 'bonbon') { var b = s.bonbon; return [M.findIn(b.shapes || [], l.shape), M.findIn(b.colors || [], l.color), M.findIn(b.finishes || [], l.finish), M.findIn(b.shells, l.shell), M.findIn(b.l1, l.l1), M.findIn(b.l2, l.l2), M.findIn(b.dust, l.dust)].filter(Boolean).map(function (x) { return M.tl(x.name); }).join(' · '); }
     return '';
   };

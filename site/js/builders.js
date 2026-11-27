@@ -356,7 +356,7 @@
   }
 
   /* ---------------- experience kits (bon-bon kit, movie-night kit) ---------------- */
-  var kitSel = M.store('bc_kits') || {};
+  var kitSel = M.store('bc_kits') || {}, kitDear = M.store('bc_kitdear') || {};
   M.renderKits = function () {
     var s = M.set(), el = $('#kitsApp'); if (!el) return;
     var cupSvg = function (color, i) {
@@ -368,13 +368,15 @@
         var sel = kitSel[k.id] = (kitSel[k.id] || []).slice(0, k.cups);
         while (sel.length < k.cups) sel.push(s.cupItems[sel.length % s.cupItems.length].id);
         var price = M.linePrice({ type: 'kit', kit: k.id, cups: sel });
-        return '<article class="kit rv"><div class="kph"><img src="' + esc(k.img) + '" alt="' + esc(tl(k.name)) + '" loading="lazy"><span class="kshine"></span></div>' +
+        var dear = kitDear[k.id] !== false;
+        return '<article class="kit rv"><div class="kph"><img src="' + esc(k.img) + '" alt="' + esc(tl(k.name)) + '" loading="lazy"><span class="kshine"></span>' + (dear ? '<span class="kdear serif">💝 ' + t('kit_dear_lid') + '</span>' : '') + '</div>' +
           '<div class="kin"><h3 class="serif">' + esc(tl(k.name)) + '</h3><p class="hint">' + esc(tl(k.items)) + '</p>' +
           sel.map(function (cid, i) {
             var it = M.findIn(s.cupItems, cid) || s.cupItems[0];
             return '<div class="cuprow"><div class="cupic">' + cupSvg(it.color, i) + '<small>' + t('cup_n', i + 1) + '</small></div><div class="opts">' +
               s.cupItems.map(function (x) { return '<button type="button" class="opt sm' + (x.id === cid ? ' on' : '') + '" data-kit="' + k.id + '" data-cup="' + i + '" data-item="' + x.id + '"><i class="dot" style="background:' + x.color + '"></i>' + esc(tl(x.name)) + (x.price ? ' +' + M.fmt(x.price / 1000) + 'k' : '') + '</button>'; }).join('') + '</div></div>';
           }).join('') +
+          '<button type="button" class="opt sm kdeart' + (dear ? ' on' : '') + '" data-dear="' + k.id + '" aria-pressed="' + dear + '">' + (dear ? '✓ ' : '+ ') + '💝 ' + t('kit_dear') + ' <small>(' + t('kit_dear_free') + ')</small></button>' +
           '<div class="kfoot"><span class="price-big">' + som(price) + '</span><button type="button" class="cta sm drip" data-addkit="' + k.id + '">' + t('add') + '</button></div></div></article>';
       }).join('') + '</div>';
     FX.observe(el);
@@ -383,8 +385,10 @@
       el.addEventListener('click', function (e) {
         var b = e.target.closest('[data-item]');
         if (b) { kitSel[b.dataset.kit][+b.dataset.cup] = b.dataset.item; M.store('bc_kits', kitSel); var y = scrollY; M.renderKits(); $$('.kit', el).forEach(function (k) { k.classList.add('in'); }); scrollTo(0, y); return; }
+        var dr = e.target.closest('[data-dear]');
+        if (dr) { kitDear[dr.dataset.dear] = kitDear[dr.dataset.dear] === false; M.store('bc_kitdear', kitDear); var y2 = scrollY; M.renderKits(); $$('.kit', el).forEach(function (k) { k.classList.add('in'); }); scrollTo(0, y2); return; }
         var a = e.target.closest('[data-addkit]');
-        if (a) { var card = a.closest('.kit'); M.addLine({ type: 'kit', kit: a.dataset.addkit, cups: kitSel[a.dataset.addkit].slice(), qty: 1 }, card.querySelector('img')); }
+        if (a) { var card = a.closest('.kit'), ln = { type: 'kit', kit: a.dataset.addkit, cups: kitSel[a.dataset.addkit].slice(), qty: 1 }; if (kitDear[a.dataset.addkit] !== false) ln.dear = true; M.addLine(ln, card.querySelector('img')); }
       });
     }
   };

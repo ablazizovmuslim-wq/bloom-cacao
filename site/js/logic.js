@@ -30,11 +30,18 @@
         agents: { sales: true, autopost: true, postHour: 9 },
       maker: '', storage: 'Salqin va quruq joyda (16–20°C), quyosh nuridan uzoqda saqlang. Muzlatgichga qoʻymang. Eng mazali — 14 kun ichida.',
         kits: [
-          { id: 'bonbon', price: 220000, cups: 2, img: 'img/kit-bonbon.jpg', name: L('Bon-bon yasash boksi', 'Бокс «Сделай бон-бон»', 'Make-your-bonbon kit'),
+          { id: 'bonbon', price: 149000, cups: 2, img: 'img/kit-bonbon.jpg', name: L('Bon-bon yasash boksi', 'Бокс «Сделай бон-бон»', 'Make-your-bonbon kit'),
             items: L('Silikon qolip, shokolad tomchilari, 2 ta idishcha, retsept kartasi', 'Силиконовая форма, шоколадные капли, 2 баночки, карточка с рецептом', 'Silicone mould, chocolate drops, 2 cups, recipe card') },
-          { id: 'kino', price: 260000, cups: 2, img: 'img/kit-kino.jpg', name: L('«Kino kechasi» boksi', 'Бокс «Вечер кино»', '“Movie night” kit'),
+          { id: 'kino', price: 179000, cups: 2, img: 'img/kit-kino.jpg', name: L('«Kino vaqti» boksi', 'Бокс «Время кино»', '“Movie time” kit'),
             items: L('Shokolad isitgich va sham, sanchqi, shokolad tomchilari, pechenye, 2 ta idishcha', 'Подогреватель со свечой, вилочка, шоколадные капли, печенье, 2 баночки', 'Warmer with a candle, fork, chocolate drops, cookies, 2 cups') }
         ],
+        luck: { on: true, prizes: [
+          { id: 'shokolad', kind: 'shokolad', w: 3, name: L('Shokolad tomchilari (kichik idishcha)', 'Шоколадные капли (маленькая баночка)', 'Chocolate drops (small cup)') },
+          { id: 'bodom', kind: 'bezak', w: 3, name: L('Bodom (kichik idishcha)', 'Миндаль (маленькая баночка)', 'Almonds (small cup)') },
+          { id: 'mayiz', kind: 'bezak', w: 3, name: L('Mayiz (kichik idishcha)', 'Изюм (маленькая баночка)', 'Raisins (small cup)') },
+          { id: 'pista', kind: 'bezak', w: 2, name: L('Pista (kichik idishcha)', 'Фисташка (маленькая баночка)', 'Pistachio (small cup)') },
+          { id: 'qolip', kind: 'qolip', w: 2, name: L('2 talik silikon qolip', 'Силиконовая форма на 2 шт', '2-piece silicone mould') }
+        ] },
         cupItems: [
           { id: 'choksous', price: 0, color: '#4a2a1a', name: L('Shokolad sousi', 'Шоколадный соус', 'Chocolate sauce') },
           { id: 'karamel', price: 0, color: '#c98a3c', name: L('Karamel sousi', 'Карамельный соус', 'Caramel sauce') },
@@ -119,7 +126,7 @@
         P('p5', 'boks', 250000, 20, 'img/p5.jpg', ['Shokolad va gulli choy boks', 'Бокс: шоколад и цветочный чай', 'Chocolate & flower tea box'], ['Mini toʻplam', 'Мини-набор', 'Mini set'])
       ],
       users: [], orders: [], txs: [], topups: [], reviews: [], promos: [], leads: [], chats: [],
-      classes: [], bookings: [], wishlists: [], notify: [], mig: 3
+      classes: [], bookings: [], wishlists: [], notify: [], luckCodes: [], mig: 4
     };
     function P(id, cat, price, total, img, n, s) {
       return { id: id, cat: cat, price: price, total: total, left: total, img: img, active: true, holiday: '', dropAt: 0,
@@ -296,6 +303,7 @@
         if (cups.length !== kit.cups || cups.some(function (c) { return !s.cupItems.some(function (x) { return x.id === c; }); })) throw err('kit_cups');
         price = kit.price + cups.reduce(function (a, c) { return a + s.cupItems.find(function (x) { return x.id === c; }).price; }, 0);
         line = { type: 'kit', kit: kit.id, cups: cups };
+        if (l.dear) line.dear = true;
       } else if (l.type === 'bonbon') {
         var bb = s.bonbon, ok = function (list, id) { return list.some(function (x) { return x.id === id; }); };
         if (!ok(bb.shells, l.shell) || !ok(bb.l1, l.l1) || !ok(bb.l2, l.l2) || !ok(bb.dust, l.dust)) throw err('bad_bonbon');
@@ -372,6 +380,8 @@
       if (q.wallet > 0) tx(db, user, -q.wallet, 'pay', '#' + o.id, now);
       if (!user.phone) user.phone = phone;
       user.scratches = (user.scratches || 0) + 1;
+      var lk = (user.luck || []).filter(function (x) { return !x.order; });
+      if (lk.length) { o.bonus = lk.map(function (x) { return luckName(db, x.prize); }); lk.forEach(function (x) { x.order = o.id; }); }
     }
     db.orders.push(o);
     ctx.events.push({ type: 'order_new', order: o, user: user || null });
@@ -436,7 +446,7 @@
         o.locked = !!(p.dropAt && p.dropAt > now); return o;
       }),
       settings: {
-        brand: s.brand || 'Bloom & Cacao', kits: s.kits || [], cupItems: s.cupItems || [], bonbon: s.bonbon,
+        brand: s.brand || 'Bloom & Cacao', kits: s.kits || [], cupItems: s.cupItems || [], bonbon: s.bonbon, luckOn: !!(s.luck && s.luck.on),
         cashbackPercent: s.cashbackPercent, levels: s.levels, piecePrice: s.piecePrice, boxSizes: s.boxSizes, packaging: s.packaging,
         ribbons: s.ribbons, flavors: s.flavors, bars: s.bars, toppings: s.toppings, maxToppings: s.maxToppings,
         toyPacks: s.toyPacks, toyMinGuests: s.toyMinGuests, toyDiscountFrom: s.toyDiscountFrom, toyDiscount: s.toyDiscount,
@@ -457,6 +467,27 @@
     };
   }
 
+  /* ---- "omad qogʻozchasi": courier's paper notes -> bonus added to the next order; collect shokolad + bezak + qolip = own bon-bon set ---- */
+  var LUCK_KINDS = ['shokolad', 'bezak', 'qolip'];
+  function luckPrize(db, id) { return ((db.settings.luck || {}).prizes || []).find(function (x) { return x.id === id; }); }
+  function luckName(db, id) { var p = luckPrize(db, id); return p ? p.name.uz : id; }
+  function luckInfo(db, u) {
+    var list = (u.luck || []).map(function (x) { var p = luckPrize(db, x.prize) || { kind: '', name: { uz: x.prize, ru: x.prize, en: x.prize } }; return { prize: x.prize, kind: p.kind, name: p.name, at: x.at, order: x.order || null }; });
+    var have = LUCK_KINDS.filter(function (k) { return list.some(function (x) { return x.kind === k; }); });
+    return { list: list.reverse(), have: have, kinds: LUCK_KINDS, complete: have.length === LUCK_KINDS.length };
+  }
+  function luckGen(db, n, rnd) {
+    var ps = ((db.settings.luck || {}).prizes || []).filter(function (p) { return (p.w || 0) > 0; }), out = [];
+    if (!ps.length) throw err('luck_none');
+    var tot = ps.reduce(function (a, p) { return a + p.w; }, 0);
+    for (var i = 0; i < n; i++) {
+      var r = rnd() * tot, p = ps[0];
+      for (var j = 0; j < ps.length; j++) { r -= ps[j].w; if (r < 0) { p = ps[j]; break; } }
+      var c; do { c = code('L', rnd); } while (db.luckCodes.some(function (x) { return x.code === c; }));
+      var it = { code: c, prize: p.id, made: Date.now(), used: null, at: 0 }; db.luckCodes.push(it); out.push(it);
+    }
+    return out;
+  }
   function me(db, u, ctx) {
     // birthday gift: issue once per year within the birthday day
     var now = ctx.now;
@@ -474,7 +505,8 @@
       promos: db.promos.filter(function (p) { return p.user === u.id && (!p.maxUses || p.used < p.maxUses) && (!p.until || p.until > now); }),
       badges: badges(db, u),
       wish: db.wishlists.find(function (w) { return w.user === u.id; }) || null,
-      notify: db.notify.filter(function (n) { return n.user === u.id; }).map(function (n) { return n.product; })
+      notify: db.notify.filter(function (n) { return n.user === u.id; }).map(function (n) { return n.product; }),
+      luck: luckInfo(db, u)
     };
   }
 
@@ -703,6 +735,18 @@
       var c = db.chats.find(function (x) { return x.key === key; });
       return { msgs: c ? c.msgs : [] };
     },
+    luck: function (db, b, ctx) {
+      var u = needUser(ctx), c = str(b.code, 20).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (c && c.charAt(0) !== 'L') c = 'L' + c;
+      var it = (db.luckCodes || []).find(function (x) { return x.code === c; });
+      if (!it) throw err('luck_bad');
+      if (it.used) throw err(it.used === u.id ? 'luck_mine' : 'luck_used');
+      it.used = u.id; it.at = ctx.now;
+      u.luck = u.luck || []; u.luck.push({ prize: it.prize, code: it.code, at: ctx.now, order: null });
+      var info = luckInfo(db, u), p = luckPrize(db, it.prize);
+      ctx.events.push({ type: 'luck', user: u, prize: p ? p.name.uz : it.prize, complete: info.complete });
+      return { prize: p ? p.name : { uz: it.prize, ru: it.prize, en: it.prize }, kind: p ? p.kind : '', luck: info };
+    },
     suggest: function (db, b, ctx) { return suggest(db, b.text, ctx); },
     ai: function (db, b, ctx) { return aiRule(db, b, ctx); },
 
@@ -714,7 +758,16 @@
         reviews: db.reviews.slice(-200).reverse(), promos: db.promos.slice(-300).reverse(), leads: db.leads.slice(-200).reverse(),
         chats: db.chats.slice().sort(function (a, b2) { return (b2.at || 0) - (a.at || 0); }).slice(0, 100),
         classes: db.classes, bookings: db.bookings.slice(-300).reverse(), today: tkDay(ctx.now), dealId: dealId(db, ctx.now),
-        holiday: nextHoliday(db, ctx.now) };
+        holiday: nextHoliday(db, ctx.now), luckCodes: (db.luckCodes || []).slice(-400).reverse() };
+    },
+    'admin.luckGen': function (db, b, ctx) { needAdmin(ctx); return luckGen(db, Math.max(1, Math.min(60, int(b.n) || 6)), ctx.rnd); },
+    'admin.luckPrizes': function (db, b, ctx) {
+      needAdmin(ctx); var L3 = function (o) { return { uz: str(o && o.uz, 80), ru: str(o && o.ru, 80) || str(o && o.uz, 80), en: str(o && o.en, 80) || str(o && o.uz, 80) }; };
+      if (typeof b.on === 'boolean') db.settings.luck.on = b.on;
+      if (Array.isArray(b.prizes)) db.settings.luck.prizes = b.prizes.slice(0, 20).filter(function (p) { return p && p.id && p.name && p.name.uz; }).map(function (p) {
+        return { id: str(p.id, 20).replace(/[^a-z0-9_]/gi, ''), kind: LUCK_KINDS.indexOf(p.kind) >= 0 ? p.kind : 'bezak', w: Math.max(0, Math.min(10, int(p.w))), name: L3(p.name) };
+      });
+      return db.settings.luck;
     },
     'admin.product': function (db, b, ctx) {
       needAdmin(ctx);
@@ -832,9 +885,15 @@
     ['shapes', 'colors', 'finishes'].forEach(function (k) { if (!db.settings.bonbon[k]) db.settings.bonbon[k] = sd.bonbon[k]; });
     db.products = db.products.filter(function (p) { return !(['p2', 'p3', 'p4'].indexOf(p.id) >= 0 && p.img === 'img/' + p.id + '.jpg'); });
     (db.orders || []).forEach(function (o) { if (!o.pass) o.pass = code('') + code(''); if (!o.photos) o.photos = []; });
+    if (!db.luckCodes) db.luckCodes = [];
+    (db.settings.kits || []).forEach(function (k) {
+      if (k.id === 'kino' && /Kino kechasi/.test(k.name.uz)) { k.name = sd.kits[1].name; }
+      if (k.id === 'bonbon' && k.price === 220000) k.price = 149000;
+      if (k.id === 'kino' && k.price === 260000) k.price = 179000;
+    });
   }
   function handle(db, route, body, ctx) {
-    if ((db.mig || 0) < 3) { migrate(db); db.mig = 3; }
+    if ((db.mig || 0) < 4) { migrate(db); db.mig = 4; }
     ctx.now = ctx.now || Date.now();
     ctx.rnd = ctx.rnd || Math.random;
     ctx.events = ctx.events || [];

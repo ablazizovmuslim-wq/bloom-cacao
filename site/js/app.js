@@ -31,7 +31,7 @@
     setMode('day', true);
     if (API.mode === 'server' && W.initData && !API.loggedIn()) { try { await API.webappLogin(W.initData); } catch (e) { console.warn('webapp login', e); } }
     var sp = W.initDataUnsafe && W.initDataUnsafe.start_param;
-    if (sp && /^pass-[A-Za-z0-9]+$/.test(sp)) history.replaceState(null, '', '#' + sp);
+    if (sp && /^(pass|luck)-[A-Za-z0-9]+$/.test(sp)) history.replaceState(null, '', '#' + sp);
   }
   async function loadCatalog() {
     try { S.cat = await API.call('catalog', {}); M._loadedAt = performance.now(); }
@@ -41,7 +41,7 @@
     try { S.me = await API.call('me', {}); }
     catch (e) { if (e.code === 'need_login') API.logout(); S.me = null; }
   }
-  M.refresh = async function () { await loadCatalog(); if (API.loggedIn()) await loadMe(); renderAll(true); };
+  M.refresh = async function () { await loadCatalog(); if (API.loggedIn()) await loadMe(); renderAll(true); var pl = ''; try { pl = sessionStorage.getItem('bc_luck'); } catch (e) {} if (pl && S.me) openAcc(); };
 
   function renderAll(soft) {
     I18N.apply();
@@ -276,6 +276,11 @@
     if (/^gift-[A-Za-z0-9]+$/.test(h)) M.giftView && M.giftView(h.slice(5));
     else if (/^wish-[a-z0-9]+$/.test(h)) M.wishView && M.wishView(h.slice(5));
     else if (/^pass-[A-Za-z0-9]+$/.test(h)) M.passView && M.passView(h.slice(5));
+    else if (/^luck-[A-Za-z0-9]+$/.test(h)) {
+      try { sessionStorage.setItem('bc_luck', h.slice(5)); } catch (e) {}
+      history.replaceState(null, '', location.pathname);
+      if (S.me) openAcc(); else { M.toast(t('luck_t') + ' — ' + t('login')); M.login(); }
+    }
   }
 
   /* ---------------- cart & checkout ---------------- */
@@ -526,6 +531,7 @@
     var orders = me.orders.map(function (o) {
       return '<div class="oc"><div class="hd"><b>#' + o.id + '</b><span>' + o.date + (o.preorder ? ' ✦' : '') + '</span><b>' + som(o.total) + '</b></div>' + track(o) +
         ((o.photos || []).length ? '<p class="hint" style="margin:8px 0 4px">📸 ' + t('order_photos') + '</p><div class="ophs">' + o.photos.map(function (u) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener"><img src="' + esc(u) + '" alt=""></a>'; }).join('') + '</div>' : '') +
+        (o.bonus && o.bonus.length ? '<div class="bonus">' + t('order_bonus') + ': ' + esc(o.bonus.join(', ')) + '</div>' : '') +
         (o.gift && o.gift.opened ? '<p class="hint">🎁 ' + t('gift_sent') + (o.gift.thanks ? ' «' + esc(o.gift.thanks) + '»' : '') + '</p>' : '') +
         '<div class="acts"><button type="button" data-repeat="' + o.id + '">↻ ' + t('repeat') + '</button>' +
         (o.pass && o.status !== 'cancelled' ? '<button type="button" data-pass="' + esc(o.pass) + '">🏷 ' + t('pass_btn') + '</button>' : '') +
@@ -544,6 +550,7 @@
       '<div class="lvbar" style="margin-top:6px"><i style="width:0" data-w="' + pct + '"></i></div><small>' + (lv.next ? t('lv_next', t('lv_' + lv.next), som(lv.nextMin - lv.spent)) : t('lv_max')) + '</small></div></div>' +
       '<div class="walletc" id="walletC"><div class="row2"><span>' + t('wallet') + '</span><button type="button" data-topup>+ ' + t('topup') + '</button></div><div class="bal" id="bal" data-v="' + u.balance + '">0</div>' +
       (pend.length ? '<small>' + t('topup_wait', som(pend[0].amount)) + '</small>' : '') + '</div>' +
+      luckBlock(me) +
       (txs ? '<details><summary class="acc-h">' + t('history') + '</summary><div class="txl" style="margin-top:8px">' + txs + '</div></details>' : '') +
       (promos ? '<p class="acc-h">' + t('my_promos') + '</p><div style="display:flex;flex-wrap:wrap;gap:6px">' + promos + '</div>' : '') +
       '<p class="acc-h">' + t('badges') + '</p><div class="bgrid">' + bd + '</div>' +
@@ -562,6 +569,16 @@
     d.onclick = accClick;
   }
   M.renderAcc = renderAcc;
+  function luckBlock(me) {
+    if (!S.cat.settings.luckOn || !me.luck) return '';
+    var L = me.luck, IC = { shokolad: '🍫', bezak: '🌰', qolip: '🧁' };
+    var pendCode = ''; try { pendCode = sessionStorage.getItem('bc_luck') || ''; } catch (e) {}
+    return '<div class="luckc"><b class="serif" style="font-size:19px">' + t('luck_t') + '</b><p class="hint" style="margin:6px 0 0">' + t('luck_p') + '</p>' +
+      '<div class="slots">' + L.kinds.map(function (k) { return '<div class="slot' + (L.have.indexOf(k) >= 0 ? ' on' : '') + '"><i>' + IC[k] + '</i>' + t('luck_k_' + k) + '</div>'; }).join('') + '</div>' +
+      (L.complete ? '<div class="done">🎉 ' + t('luck_done') + '</div>' : '') +
+      '<div class="lrow"><input id="luckIn" maxlength="10" autocomplete="off" placeholder="' + t('luck_ph') + '" value="' + esc(pendCode) + '"><button type="button" class="ghost" data-luck style="padding:0 14px">' + t('luck_btn') + '</button></div>' +
+      (L.list.length ? '<ul>' + L.list.slice(0, 8).map(function (x) { return '<li>' + esc(M.tl(x.name)) + ' — <small class="hint">' + (x.order ? t('luck_given', x.order) : t('luck_wait')) + '</small></li>'; }).join('') + '</ul>' : '') + '</div>';
+  }
   function countBal() {
     var b = $('#bal'); if (!b) return; var v = +b.dataset.v, t0 = performance.now();
     (function s(n) { var k = Math.min(1, (n - t0) / 1200), e = 1 - Math.pow(1 - k, 3); b.textContent = som(Math.round(v * e)); if (k < 1) requestAnimationFrame(s); })(t0);
@@ -569,6 +586,15 @@
   async function accClick(e) {
     var b, me = S.me;
     if ((b = e.target.closest('[data-pass]'))) { M.passView(b.dataset.pass); return; }
+    if (e.target.closest('[data-luck]')) {
+      var lc = ($('#luckIn').value || '').trim(); if (!lc) { $('#luckIn').focus(); return; }
+      try {
+        var r = await M.call('luck', { code: lc }); try { sessionStorage.removeItem('bc_luck'); } catch (er2) {}
+        me.luck = r.luck; renderAcc(); M.toast(t('luck_ok', M.tl(r.prize)));
+        var lb = $('.luckc'); if (lb) { var rr = lb.getBoundingClientRect(); FX.burst(rr.left + rr.width / 2, rr.top + 60, r.luck.complete ? 40 : 22); }
+      } catch (er) {}
+      return;
+    }
     if ((b = e.target.closest('[data-repeat]'))) {
       var o = me.orders.find(function (x) { return x.id === +b.dataset.repeat; });
       o.lines.forEach(function (l) { var c = Object.assign({}, l); delete c.price; delete c.sum; delete c.name; delete c.deal; if (c.type === 'product' && !M.prod(c.id)) return; S.cart.push(c); });

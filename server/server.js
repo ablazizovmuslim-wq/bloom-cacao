@@ -116,7 +116,7 @@ function lineText(l) {
   if (l.type === 'bar') return 'Plitka ' + nm(s.bars, l.base) + ' + ' + l.tops.map((c) => nm(s.toppings, c)).join(', ');
   if (l.type === 'toy') return 'TOʻY ' + l.guests + ' mehmon, ' + nm(s.toyPacks, l.pack);
   if (l.type === 'club') return 'Club ' + l.months + ' oy';
-  if (l.type === 'kit') return 'BOKS ' + nm(s.kits, l.kit) + ' — ' + l.cups.map((c) => nm(s.cupItems, c)).join(', ');
+  if (l.type === 'kit') return 'BOKS ' + nm(s.kits, l.kit) + ' — ' + l.cups.map((c) => nm(s.cupItems, c)).join(', ') + (l.dear ? ' · «Qadrli insonimga» yozuvi' : '');
   if (l.type === 'bonbon') return 'Bon-bon: ' + nm(s.bonbon.shapes, l.shape) + ', ' + nm(s.bonbon.colors, l.color) + ' rang, ' + nm(s.bonbon.finishes, l.finish) + ', ' + nm(s.bonbon.shells, l.shell) + ', ' + nm(s.bonbon.l1, l.l1) + ' + ' + nm(s.bonbon.l2, l.l2) + ', ' + nm(s.bonbon.dust, l.dust);
   return (l.name ? l.name.uz : l.id) + (l.deal ? ' (kun shokoladi)' : '');
 }
@@ -126,6 +126,7 @@ function orderText(o) {
     '👤 ' + h(o.name) + ' · ' + h(o.phone) + '\n📍 ' + h(DN[o.district] || o.district) + ', ' + h(o.address) + '\n📅 ' + o.date + ' ' + h(o.time) + (o.preorder ? ' (oldindan)' : '') + '\n' +
     (o.gift ? '🎁 Sovgʻa: ' + h(o.gift.to) + ' ' + h(o.gift.phone) + (o.gift.secret ? ' (sir)' : '') + '\n' : '') +
     o.lines.map((l) => '• ' + h(lineText(l)) + ' × ' + l.qty + ' = ' + fmt(l.sum)).join('\n') + '\n' +
+    (o.bonus && o.bonus.length ? '🍀 Qoʻshib bering (omad sovgʻasi): ' + h(o.bonus.join(', ')) + '\n' : '') +
     (o.engrave ? '✍️ Ism: ' + h(o.engrave) + '\n' : '') + (o.card && o.card.text ? '💌 «' + h(o.card.text) + '»\n' : '') + (o.card && o.card.voice ? '🎙 Ovozli tabrik: ' + site + o.card.voice + '\n' : '') +
     (o.comment ? '💬 ' + h(o.comment) + '\n' : '') +
     (o.discount ? 'Chegirma: −' + fmt(o.discount) + ' (' + h(o.promo) + ')\n' : '') + (o.wallet ? 'Hamyondan: −' + fmt(o.wallet) + '\n' : '') +
@@ -161,6 +162,7 @@ function onEvents(events) {
     else if (e.type === 'chat_reply') { const u = L.findUser(db, e.chat.key); toUser(u, '💬 ' + h(db.settings.brand || 'Bloom & Cacao') + ': ' + h(e.text)); }
     else if (e.type === 'gift_opened') { if (e.order.gift.thanks || !e.order.gift._told) { e.order.gift._told = 1; toUser(e.user, '🎁 ' + h(e.order.gift.to) + ' sovgʻangizni ochdi!' + (e.order.gift.thanks ? '\n❤️ «' + h(e.order.gift.thanks) + '»' : '')); } }
     else if (e.type === 'restock') e.users.forEach((uid) => toUser(L.findUser(db, uid), '🍫 <b>' + h(e.product.name.uz) + '</b> yana sotuvda! ' + (PUBLIC_URL ? PUBLIC_URL + '/#menu' : '')));
+    else if (e.type === 'luck') { toAdmins('🍀 Omad qogʻozchasi faollashtirildi: <b>' + h(e.prize) + '</b>\n👤 ' + h(e.user.name) + ' ' + h(e.user.phone || '') + (e.complete ? '\n🎉 Toʻplam yigʻildi (shokolad + bezak + qolip)!' : '') + '\nKeyingi buyurtmasiga qoʻshib beriladi.'); toUser(e.user, '🍀 Tabriklaymiz! <b>' + h(e.prize) + '</b> keyingi buyurtmangizga qoʻshib beriladi.' + (e.complete ? '\n🎉 Bon-bon toʻplamingiz toʻliq yigʻildi — endi oʻzingiz bon-bon tayyorlay olasiz!' : '')); }
     else if (e.type === 'birthday') toUser(e.user, '🎂 Tugʻilgan kuningiz bilan, ' + h(e.user.name) + '! Sizga −' + db.settings.birthdayPercent + '% sovgʻa promokodi kabinetda kutmoqda.');
   }
 }
