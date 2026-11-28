@@ -2,9 +2,9 @@
 /* VOICE: tender luxury, a jeweller's gift box
    IDEA: the page behaves like opening a MAVİ gift box: gold foil, silk, things alive inside
    PICTURE: silk + marble + glowing gold frames around the real product photo
-   COLOUR/TYPE: emerald silk #0a3a32, gold foil #e6c277, cream #f2e6cf; Playfair Display + Cormorant + Jost
+   COLOUR/TYPE: emerald silk #3b2216, gold foil #e6c277, cream #f2e6cf; Playfair Display + Cormorant + Jost
    LAYOUT: hero, ribbon, menu, tea ritual, why, box, footer */
-:root{color-scheme:dark;--em:#0a3a32;--em2:#041b17;--gold:#e6c277;--gold2:#b88934;--cream:#f2e6cf;--brown:#5a3c24}
+:root{color-scheme:dark;--em:#3b2216;--em2:#1c0e08;--gold:#e6c277;--gold2:#b88934;--cream:#f2e6cf;--brown:#5a3c24}
 *{box-sizing:border-box;min-width:0}
 html{scroll-behavior:smooth;scroll-padding-top:80px}
 body{margin:0;background:var(--em2);color:#f4e7c6;font:16px/1.55 Jost,system-ui,sans-serif;overflow-x:clip}
@@ -28,7 +28,7 @@ button{font:inherit}
 
 /* header */
 .top{position:fixed;left:0;right:0;top:0;z-index:50;transition:background .4s,backdrop-filter .4s,padding .4s;padding:22px max(4vw,16px)}
-.top.solid{background:rgba(4,27,23,.82);backdrop-filter:blur(12px);padding-block:12px;box-shadow:0 1px 0 rgba(230,194,119,.25)}
+.top.solid{background:rgba(28,14,8,.82);backdrop-filter:blur(12px);padding-block:12px;box-shadow:0 1px 0 rgba(230,194,119,.25)}
 .top .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px}
 .logo{display:flex;align-items:center;gap:10px;text-decoration:none}
 .logo b{font-size:26px;letter-spacing:.08em}
@@ -49,7 +49,7 @@ button{font:inherit}
  radial-gradient(ellipse 45% 30% at 62% 78%,rgba(44,118,104,.4),transparent 70%),
  radial-gradient(ellipse 40% 60% at 90% 20%,rgba(20,80,70,.5),transparent 70%),
  repeating-linear-gradient(118deg,rgba(0,0,0,0) 0 70px,rgba(120,210,190,.07) 110px,rgba(0,0,0,.22) 170px,rgba(0,0,0,0) 230px),
- linear-gradient(135deg,#041b17 0%,#0a3a32 45%,#052520 100%)}
+ linear-gradient(135deg,#1c0e08 0%,#3b2216 45%,#24130b 100%)}
 @keyframes silk{0%{background-position:0 0}100%{background-position:100% 60%}}
 .shimmer{position:absolute;top:-10%;bottom:-10%;left:0;width:60%;pointer-events:none;background:linear-gradient(105deg,transparent 20%,rgba(180,240,220,.08) 40%,rgba(255,255,255,.12) 50%,rgba(180,240,220,.08) 60%,transparent 80%);animation:shim 9s ease-in-out infinite;will-change:transform}
 @keyframes shim{0%{transform:translateX(-110%)}100%{transform:translateX(220%)}}
@@ -166,7 +166,7 @@ button{font:inherit}
 .rv.in{opacity:1;transform:none}
 
 /* tea ritual */
-.tea{position:relative;overflow:hidden;padding:120px max(4vw,16px);background:radial-gradient(ellipse 60% 60% at 30% 50%,#11463c,transparent 70%),linear-gradient(160deg,#041b17,#0a3a32 60%,#052520)}
+.tea{position:relative;overflow:hidden;padding:120px max(4vw,16px);background:radial-gradient(ellipse 60% 60% at 30% 50%,#5a3420,transparent 70%),linear-gradient(160deg,#1c0e08,#3b2216 60%,#24130b)}
 .tea .wrap{position:relative;z-index:3;max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:60px}
 .potbox{flex:1 1 380px;display:flex;justify-content:center}
 .pot{width:100%;max-width:440px;overflow:visible}
@@ -206,14 +206,14 @@ button{font:inherit}
 .feat p{margin:0;color:#6e5233}
 
 /* footer */
-.foot{position:relative;overflow:hidden;padding:70px max(4vw,16px) 40px;background:linear-gradient(135deg,#041b17,#0a3a32);border-top:1px solid rgba(230,194,119,.3)}
+.foot{position:relative;overflow:hidden;padding:70px max(4vw,16px) 40px;background:linear-gradient(135deg,#1c0e08,#3b2216);border-top:1px solid rgba(230,194,119,.3)}
 .foot .in{position:relative;z-index:3;max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:28px}
 .foot p{margin:0;color:#d9c48f}
 .foot .soc{display:flex;gap:12px}
 .foot .soc a{display:grid;place-items:center;width:46px;height:46px;border:1px solid rgba(233,207,143,.5);border-radius:50%;transition:transform .3s,box-shadow .3s}
 .foot .soc a:hover{transform:translateY(-4px);box-shadow:0 0 18px rgba(233,207,143,.5)}
 .copy{position:relative;z-index:3;margin-top:36px;text-align:center;font-size:13px;color:#a8946a}
-.totop{position:fixed;right:22px;bottom:22px;z-index:55;width:48px;height:48px;border-radius:50%;border:1px solid var(--gold);background:rgba(4,27,23,.8);color:var(--gold);display:grid;place-items:center;opacity:0;transform:translateY(20px);transition:all .4s;pointer-events:none}
+.totop{position:fixed;right:22px;bottom:22px;z-index:55;width:48px;height:48px;border-radius:50%;border:1px solid var(--gold);background:rgba(28,14,8,.8);color:var(--gold);display:grid;place-items:center;opacity:0;transform:translateY(20px);transition:all .4s;pointer-events:none}
 .totop.show{opacity:1;transform:none;pointer-events:auto}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.fall,#dust,#fx{display:none}}

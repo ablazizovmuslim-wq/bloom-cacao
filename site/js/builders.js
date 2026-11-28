@@ -55,7 +55,7 @@
     '<g class="fill-drop"><path d="M200 130 C212 150 212 160 200 166 C188 160 188 150 200 130Z" fill="#8fae3e"/></g>' +
     '<g>' + [[120, 300], [280, 300], [150, 330]].map(function (p) { return '<ellipse cx="' + p[0] + '" cy="' + p[1] + '" rx="16" ry="10" fill="#c98b4c" transform="rotate(-20 ' + p[0] + ' ' + p[1] + ')"/>'; }).join('') + '</g></svg>',
     // packing
-    '<svg viewBox="0 0 400 400"><defs><linearGradient id="pbx" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#145247"/><stop offset="1" stop-color="#062a24"/></linearGradient><linearGradient id="prb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9c7128"/><stop offset=".5" stop-color="#fff0bd"/><stop offset="1" stop-color="#9c7128"/></linearGradient></defs>' +
+    '<svg viewBox="0 0 400 400"><defs><linearGradient id="pbx" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b3423"/><stop offset="1" stop-color="#24130b"/></linearGradient><linearGradient id="prb" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9c7128"/><stop offset=".5" stop-color="#fff0bd"/><stop offset="1" stop-color="#9c7128"/></linearGradient></defs>' +
     '<ellipse cx="200" cy="350" rx="150" ry="14" fill="#000" opacity=".3"/><rect x="70" y="200" width="260" height="140" rx="10" fill="url(#pbx)" stroke="#c99a45" stroke-width="2"/>' +
     [[115, 250, '#c2185b'], [165, 250, '#1e88a8'], [215, 250, '#c9a227'], [265, 250, '#8fae3e'], [140, 295, '#4a2a1a'], [190, 295, '#efe3c8'], [240, 295, '#c2185b']].map(function (b) { return '<circle cx="' + b[0] + '" cy="' + b[1] + '" r="18" fill="' + b[2] + '"/><circle cx="' + (b[0] - 6) + '" cy="' + (b[1] - 6) + '" r="5" fill="#fff" opacity=".5"/>'; }).join('') +
     '<g class="lidc"><rect x="58" y="168" width="284" height="42" rx="8" fill="url(#pbx)" stroke="#c99a45" stroke-width="2"/><rect x="188" y="168" width="24" height="42" fill="url(#prb)"/>' +
@@ -257,7 +257,7 @@
   var wheelRot = 0;
   M.renderGames = function () {
     var me = S.me, u = me && me.user, now = M.now(), W = S.cat.wheel;
-    var seg = 360 / W.length, cols = ['#0a3a32', '#e6c277', '#145247', '#c94b6d', '#0a3a32', '#e6c277', '#145247', '#c94b6d'];
+    var seg = 360 / W.length, cols = ['#3b2216', '#e6c277', '#5b3423', '#c94b6d', '#3b2216', '#e6c277', '#5b3423', '#c94b6d'];
     var wheel = '<svg class="wheel" id="wheel" viewBox="-110 -110 220 220" style="transform:rotate(' + wheelRot + 'deg)">' + W.map(function (w, i) {
       var a0 = (i * seg - 90) * Math.PI / 180, a1 = ((i + 1) * seg - 90) * Math.PI / 180, am = ((i + .5) * seg - 90);
       var lbl = w.t === 'coins' ? '+' + (w.v >= 1000 ? w.v / 1000 + 'k' : w.v) : '−' + w.v + '%';

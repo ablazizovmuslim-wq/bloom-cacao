@@ -6,7 +6,7 @@
   /* ---------------- init ---------------- */
   async function init() {
     S.cart = M.store('mavi_cart') || [];
-    applyTheme(M.store('mavi_theme') || 'emerald'); setMode(autoMode(M.store('bc_mode') || 'day'), true);
+    applyTheme(M.store('bc_brand2') ? (M.store('mavi_theme') || 'choc') : (M.store('bc_brand2', 1), 'choc')); setMode(autoMode(M.store('bc_mode') || 'day'), true);
     await API.ready;
     await tgApp();
     $('#demoTag').hidden = API.mode !== 'demo'; setTimeout(function () { $('#demoTag').classList.add('fade'); }, 5000);
@@ -174,8 +174,8 @@
     if (o) renderMob();
     $('#mob').classList.toggle('open', o); document.documentElement.classList.toggle('noscroll', o);
   }
-  var THEMES = { emerald: ['#0a3a32', '#e6c277'], choc: ['#3b2216', '#e6c277'], rose: ['#5a1028', '#f0c987'], night: ['#121a3a', '#e6c277'], noir: ['#111111', '#d9b56a'] };
-  function applyTheme(th) { if (!THEMES[th]) th = 'emerald'; document.documentElement.dataset.theme = th; M.store('mavi_theme', th); var tc = document.querySelector('meta[name=theme-color]'); if (tc && document.body.dataset.mode !== 'day') tc.content = THEMES[th][0]; }
+  var THEMES = { choc: ['#3b2216', '#e6c277'], rose: ['#5a1028', '#f0c987'], night: ['#121a3a', '#e6c277'], noir: ['#111111', '#d9b56a'] };
+  function applyTheme(th) { if (!THEMES[th]) th = 'choc'; document.documentElement.dataset.theme = th; M.store('mavi_theme', th); var tc = document.querySelector('meta[name=theme-color]'); if (tc && document.body.dataset.mode !== 'day') tc.content = THEMES[th][0]; }
   function autoMode(m) { if (m !== 'auto') return m; var h = new Date(Date.now() + 5 * 3600e3).getUTCHours(); return h >= 7 && h < 18 ? 'day' : 'night'; }
   function applySeason() {
     var on = M.store('mavi_season'); if (on === false) { FX.setSeason('off'); return; }
@@ -208,7 +208,7 @@
   M.openSettings = openSettings;
   function setMode(m, silent) {
     document.body.dataset.mode = m;
-    var tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = m === 'day' ? '#f2e6cf' : '#0a3a32';
+    var tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = m === 'day' ? '#f2e6cf' : '#3b2216';
     if (!silent) { var r = $('#modeBtn').getBoundingClientRect(); FX.burst(r.left + r.width / 2, r.top + r.height / 2, 20); }
   }
   M.renderBadge = function () { $('#badge').textContent = S.cart.reduce(function (a, l) { return a + (l.qty || 1); }, 0); };
@@ -345,7 +345,7 @@
         '<label class="chk"><input type="checkbox" name="giftSecret"' + (c.gift.secret ? ' checked' : '') + '><span>' + t('f_secret') + '</span></label></div>' : '') +
       '<label class="field">' + t('f_district') + '<select name="district"><option value="">—</option>' + dists + '</select></label>' +
       '<div class="route" aria-hidden="true"><svg viewBox="0 0 400 56" preserveAspectRatio="none"><path d="M10 40 C80 10 140 50 200 28 S330 10 390 30" fill="none" stroke="#c9a06a" stroke-width="3" stroke-dasharray="8 8"/></svg>' +
-      '<svg class="car" viewBox="0 0 48 28"><rect x="4" y="8" width="34" height="12" rx="4" fill="#0a3a32"/><path d="M12 8 L18 2 H30 L36 8Z" fill="#145247"/><rect x="20" y="4" width="8" height="4" fill="#bfe8dc"/><circle cx="13" cy="21" r="4" fill="#2b1a0b"/><circle cx="31" cy="21" r="4" fill="#2b1a0b"/><text x="21" y="17" font-size="6" fill="#e6c277" text-anchor="middle">♥</text></svg>' +
+      '<svg class="car" viewBox="0 0 48 28"><rect x="4" y="8" width="34" height="12" rx="4" fill="#3b2216"/><path d="M12 8 L18 2 H30 L36 8Z" fill="#5b3423"/><rect x="20" y="4" width="8" height="4" fill="#bfe8dc"/><circle cx="13" cy="21" r="4" fill="#2b1a0b"/><circle cx="31" cy="21" r="4" fill="#2b1a0b"/><text x="21" y="17" font-size="6" fill="#e6c277" text-anchor="middle">♥</text></svg>' +
       '<svg class="pin" viewBox="0 0 24 32"><path d="M12 31s10-11 10-18a10 10 0 0 0-20 0c0 7 10 18 10 18z" fill="#c94b6d"/><circle cx="12" cy="13" r="4" fill="#fff"/></svg></div>' +
       '<label class="field">' + t('f_address') + '<input name="address" value="' + esc(c.address) + '" autocomplete="street-address"></label>' +
       '<div class="field">' + t('f_date') + '<div class="opts"><button type="button" class="opt' + (dateMode === 'today' ? ' on' : '') + '" data-date="' + today + '">' + t('today') + '</button><button type="button" class="opt' + (dateMode === 'tomorrow' ? ' on' : '') + '" data-date="' + tomorrow + '">' + t('tomorrow') + '</button>' +
