@@ -505,6 +505,8 @@
         s.setAttribute('data-telegram-login', bot); s.setAttribute('data-size', 'large'); s.setAttribute('data-radius', '20');
         s.setAttribute('data-onauth', 'onTelegramAuth(user)'); s.setAttribute('data-request-access', 'write');
         $('#tgw').appendChild(s);
+      } else {
+        $('#tgw').innerHTML = '<p class="hint" style="text-align:center">⏳ ' + t('login_soon') + '</p><a class="cta sm" href="#menu" data-close style="display:table;margin:8px auto 0">' + t('to_menu') + '</a>';
       }
       return;
     }
